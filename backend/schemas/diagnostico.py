@@ -4,8 +4,8 @@ from typing import Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class DiagnosticoBase(BaseModel):
-    id_usuario: int
+# Lo que envía el cliente. El id_usuario NO va aquí: se toma del JWT.
+class DiagnosticoCreateIn(BaseModel):
     id_modelo: int
     id_modelo_cnn: int
     anio: int = Field(..., ge=1980, le=2100)
@@ -16,12 +16,14 @@ class DiagnosticoBase(BaseModel):
     confianza: float = Field(..., ge=0, le=100)
 
 
-class DiagnosticoCreate(DiagnosticoBase):
-    pass
+# DTO interno completo (con el id_usuario ya resuelto) que recibe el service.
+class DiagnosticoCreate(DiagnosticoCreateIn):
+    id_usuario: int
 
 
-class DiagnosticoRead(DiagnosticoBase):
+class DiagnosticoRead(DiagnosticoCreateIn):
     model_config = ConfigDict(from_attributes=True)
 
+    id_usuario: int
     id_diagnostico: int
     fecha_diagnostico: datetime

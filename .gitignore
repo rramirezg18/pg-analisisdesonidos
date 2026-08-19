@@ -20,6 +20,7 @@ backend/data/
 # Dependencias y build del frontend
 frontend/node_modules/
 frontend/dist/
+frontend/svg/
 
 # Sistema / editores
 .DS_Store
