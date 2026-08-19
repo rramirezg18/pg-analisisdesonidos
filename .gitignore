@@ -1,4 +1,28 @@
-# Ignorar entorno virtual de Python
+# Entornos virtuales de Python
 backend/venv/
-# Ignorar archivos cacheados de Python
-backend/__pycache__/
+.venv/
+
+# Cache de Python
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Variables de entorno / secretos
+.env
+*.env
+!.env.example
+
+# Base de datos SQLite local
+*.db
+*.sqlite3
+backend/data/
+
+# Dependencias y build del frontend
+frontend/node_modules/
+frontend/dist/
+
+# Sistema / editores
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/

@@ -16,6 +16,11 @@ from models.user import Usuario
 # access to the values within the .ini file in use.
 config = context.config
 
+# Prefer the DATABASE_URL environment variable when present so migrations
+# target the same database as the running application.
+if os.getenv("DATABASE_URL"):
+    config.set_main_option("sqlalchemy.url", os.getenv("DATABASE_URL"))
+
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 if config.config_file_name is not None:
