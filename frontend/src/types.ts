@@ -7,3 +7,44 @@ export interface Usuario {
   fecha_registro: string
   ultimo_acceso: string | null
 }
+
+export interface Marca {
+  id_marca: number
+  nombre: string
+}
+
+export type Cilindraje = 125 | 150 | 200
+
+export interface Modelo {
+  id_modelo: number
+  id_marca: number
+  nombre: string
+  cilindraje: Cilindraje
+}
+
+export interface ModeloCNN {
+  id_modelo_cnn: number
+  version: string
+  fecha_entrenamiento: string
+  exactitud_validacion: number
+  archivo_pesos: string
+  descripcion: string | null
+  activo: number
+}
+
+// Datos de la moto capturados en el paso 1 del wizard.
+export interface DatosMoto {
+  id_marca: number | ''
+  id_modelo: number | ''
+  cilindraje: Cilindraje | ''
+  anio: number | ''
+  kilometraje: number | ''
+  notas: string
+}
+
+// Nombres resueltos de la moto, para mostrar en los pasos 2 y 3.
+export interface MotoResumen {
+  marca: string
+  modelo: string
+  cilindraje: Cilindraje
+}

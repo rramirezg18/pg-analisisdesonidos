@@ -1,9 +1,13 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 
+import { AppLayout } from './components/AppLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AuthCallbackPage } from './pages/AuthCallbackPage'
+import { HistorialPage } from './pages/HistorialPage'
 import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
+import { PerfilPage } from './pages/PerfilPage'
+import { NuevoDiagnosticoPage } from './pages/diagnostico/NuevoDiagnosticoPage'
 
 function App() {
   return (
@@ -12,7 +16,12 @@ function App() {
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
       <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<HomePage />} />
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/historial" element={<HistorialPage />} />
+          <Route path="/perfil" element={<PerfilPage />} />
+        </Route>
+        <Route path="/diagnostico/nuevo" element={<NuevoDiagnosticoPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

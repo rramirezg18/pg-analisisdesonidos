@@ -1,0 +1,47 @@
+{
+  "version": "v1.0-sintetico",
+  "descripcion": "Modelo CNN con datos sinteticos. Reentrenar con datos reales.",
+  "accuracy_validacion": 100.0,
+  "clases": [
+    "normal",
+    "anomalia"
+  ],
+  "clase_map": {
+    "0": "normal",
+    "1": "anomalia"
+  },
+  "input_espectrograma": {
+    "shape": [
+      128,
+      173,
+      1
+    ]
+  },
+  "input_cilindraje": {
+    "normalizacion": "(cilindraje - 125) / 75",
+    "valores": [
+      125,
+      150,
+      200
+    ]
+  },
+  "preprocesamiento_audio": {
+    "sample_rate": 22050,
+    "n_fft": 2048,
+    "hop_length": 512,
+    "n_mels": 128,
+    "fmin": 20,
+    "fmax": 8000,
+    "duration_seconds": 4.0,
+    "normalize_db": true,
+    "normalize_range": [
+      0.0,
+      1.0
+    ]
+  },
+  "salida": {
+    "tipo": "sigmoid",
+    "interpretacion": "valor >= 0.5 = anomalia, < 0.5 = normal",
+    "confianza": "abs(valor - 0.5) * 200 = porcentaje 0-100"
+  }
+}

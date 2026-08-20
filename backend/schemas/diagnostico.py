@@ -27,3 +27,10 @@ class DiagnosticoRead(DiagnosticoCreateIn):
     id_usuario: int
     id_diagnostico: int
     fecha_diagnostico: datetime
+
+
+# Resultado que devuelve la inferencia del CNN (sin persistir todavía).
+class AnalisisResultado(BaseModel):
+    clase: Literal["normal", "anomalia"]
+    confianza: float = Field(..., ge=0, le=100)
+    valor_raw: float

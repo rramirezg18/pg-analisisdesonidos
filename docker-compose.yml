@@ -6,6 +6,7 @@ services:
       - ./backend/.env
     volumes:
       - ./backend/data:/app/data
+      - ./backend/modelos:/app/modelos
     expose:
       - "8000"
     restart: unless-stopped
