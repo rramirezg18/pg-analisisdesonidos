@@ -56,8 +56,8 @@ header-includes: |
     \end{tabular}
     \end{center}
     \vfill
-    {\small\centering Universidad Mariano Gálvez de Guatemala\\
-    Facultad de Ingeniería en Sistemas de Información y Ciencias de la Computación\par}
+    {\small\centering Enlace al Repositorio:
+    https://github.com/rramirezg18/pg-analisisdesonidos.git\par}
     \vspace{1cm}
     \end{titlepage}
   }
