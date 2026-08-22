@@ -1,0 +1,69 @@
+---
+title: "Documento de Especificación de Requerimientos y Criterios de Aceptación de Software"
+subtitle: "Sistema de Detección de Anomalías en Motores de Motocicletas mediante Análisis de Sonido con Redes Neuronales Convolucionales"
+author: "Roberto Ramírez"
+date: "18 de agosto de 2026"
+lang: "es"
+titlepage: false
+toc: false
+number-sections: true
+header-left: "DERCAS"
+header-right: "v1"
+footer-left: "Roberto Ramírez"
+footer-right: "\\thepage"
+papersize: letter
+fontsize: 11pt
+mainfont: "Latin Modern Roman"
+linkcolor: "black"
+urlcolor: "black"
+toccolor: "black"
+listings-disable-line-numbers: true
+table-use-row-colors: true
+header-includes: |
+  \usepackage{array}
+  \usepackage{colortbl}
+  \usepackage{graphicx}
+  \setkeys{Gin}{keepaspectratio}
+  \usepackage{float}
+  \floatplacement{figure}{H}
+  \definecolor{banner}{HTML}{1F4E78}
+  \AtBeginDocument{
+    \begin{titlepage}
+    \vspace*{0.5cm}
+    \begin{center}
+    \noindent\colorbox{banner}{%
+      \parbox{\dimexpr\textwidth-2\fboxsep}{%
+        \vspace{12pt}
+        \centering
+        {\fontsize{28}{34}\selectfont\bfseries\color{white}DERCAS}\\[6pt]
+        {\fontsize{11}{15}\selectfont\color{white}Documento de Especificación de Requerimientos y\\Criterios de Aceptación de Software}\\[10pt]
+      }%
+    }
+    \end{center}
+    \vspace{1.5cm}
+    \begin{center}
+    \renewcommand{\arraystretch}{1.4}
+    \begin{tabular}{|>{\columncolor{banner}\color{white}\bfseries\raggedleft}p{4.2cm}|p{9.5cm}|}
+    \hline
+    Proyecto: & Sistema de Detección de Anomalías en Motores de Motocicletas mediante Análisis de Sonido con CNN \\
+    \hline
+    Fecha: & 18 de agosto de 2026 \\
+    \hline
+    Versión: & 1.0 \\
+    \hline
+    Elaborado por: & Roberto Ramírez — Carné 7690-22-12700 \\
+    \hline
+    \end{tabular}
+    \end{center}
+    \vfill
+    {\small\centering Enlace al Repositorio:
+    https://github.com/rramirezg18/pg-analisisdesonidos.git\par}
+    \vspace{1cm}
+    \end{titlepage}
+  }
+  \arrayrulecolor{black!30}
+  \setlength{\heavyrulewidth}{1.0pt}
+  \setlength{\lightrulewidth}{0.5pt}
+  \setlength{\aboverulesep}{0pt}
+  \setlength{\belowrulesep}{0pt}
+---
