@@ -12,15 +12,11 @@ import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { useNavigate } from 'react-router-dom'
 
-import type { AnalisisResultado } from '../../api/diagnostico'
-import type { DatosMoto, ModeloCNN, MotoResumen } from '../../types'
-import type { EspectrogramaMel } from '../../utils/melSpectrogram'
+import { urlEspectrograma } from '../../api/diagnostico'
+import type { Diagnostico, ModeloCNN } from '../../types'
 
 interface Props {
-  datosMoto: DatosMoto
-  resumen: MotoResumen | null
-  espectrograma: EspectrogramaMel
-  resultado: AnalisisResultado
+  diagnostico: Diagnostico
   cnn: ModeloCNN | null
   onOtro: () => void
 }
@@ -38,16 +34,9 @@ function Fila({ etiqueta, valor }: { etiqueta: string; valor: string }) {
   )
 }
 
-export function PasoResultado({
-  datosMoto,
-  resumen,
-  espectrograma,
-  resultado,
-  cnn,
-  onOtro,
-}: Props) {
+export function PasoResultado({ diagnostico, cnn, onOtro }: Props) {
   const navigate = useNavigate()
-  const esAnomalia = resultado.clase === 'anomalia'
+  const esAnomalia = diagnostico.resultado === 'anomalia'
   const color = esAnomalia ? 'warning' : 'success'
 
   return (
@@ -87,37 +76,32 @@ export function PasoResultado({
             Confianza
           </Typography>
           <Typography variant="body2" sx={{ fontWeight: 700 }}>
-            {resultado.confianza.toFixed(0)} %
+            {diagnostico.confianza.toFixed(0)} %
           </Typography>
         </Stack>
         <LinearProgress
           variant="determinate"
           color={color}
-          value={Math.min(resultado.confianza, 100)}
+          value={Math.min(diagnostico.confianza, 100)}
           sx={{ height: 8, borderRadius: 4 }}
         />
       </Card>
 
-      {/* Espectrograma de Mel: la entrada del modelo CNN */}
+      {/* Espectrograma de Mel: la entrada del modelo CNN (imagen del servidor) */}
       <Typography variant="overline" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
         Espectrograma de Mel
       </Typography>
       <Box
         component="img"
-        src={espectrograma.dataUrl}
+        src={urlEspectrograma(diagnostico.espectrograma_ref)}
         alt="Espectrograma de Mel del motor"
         sx={{
           width: '100%',
-          height: 160,
-          objectFit: 'fill',
           borderRadius: 3,
           display: 'block',
-          imageRendering: 'pixelated',
+          bgcolor: 'background.paper',
         }}
       />
-      <Typography variant="caption" color="text.secondary">
-        {espectrograma.height} bandas Mel × {espectrograma.width} frames (preview).
-      </Typography>
 
       {/* Detalles */}
       <Card variant="outlined" sx={{ p: 2, mt: 2, bgcolor: 'background.paper' }}>
@@ -127,20 +111,21 @@ export function PasoResultado({
         <Divider sx={{ mt: 0.5 }} />
         <Fila
           etiqueta="Motocicleta"
-          valor={resumen ? `${resumen.marca} ${resumen.modelo}` : '—'}
+          valor={`${diagnostico.marca} ${diagnostico.modelo}`}
         />
         <Divider />
-        <Fila
-          etiqueta="Cilindraje"
-          valor={datosMoto.cilindraje ? `${datosMoto.cilindraje} cc` : '—'}
-        />
+        <Fila etiqueta="Cilindraje" valor={`${diagnostico.cilindraje} cc`} />
         <Divider />
-        <Fila etiqueta="Año" valor={String(datosMoto.anio || '—')} />
-        <Divider />
-        <Fila
-          etiqueta="Duración audio"
-          valor={`${espectrograma.duracionSeg.toFixed(1)} s`}
-        />
+        <Fila etiqueta="Año" valor={String(diagnostico.anio)} />
+        {diagnostico.kilometraje != null && (
+          <>
+            <Divider />
+            <Fila
+              etiqueta="Kilometraje"
+              valor={`${diagnostico.kilometraje.toLocaleString()} km`}
+            />
+          </>
+        )}
         <Divider />
         <Fila etiqueta="Modelo CNN" valor={cnn?.version ?? '—'} />
       </Card>

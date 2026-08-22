@@ -2,8 +2,8 @@ import logging
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse
 
 from middleware import setup_middlewares
 from services.cnn_service import CNNService
@@ -15,6 +15,9 @@ logger = logging.getLogger(__name__)
 
 MODELO_CNN_PATH = os.getenv("MODELO_CNN_PATH", "modelos/modelo_cnn_v1.keras")
 MODELO_CNN_CONFIG = os.getenv("MODELO_CNN_CONFIG", "modelos/model_config.json")
+
+# Carpeta servida estáticamente (imágenes de espectrogramas). Vive en el volumen data.
+MEDIA_DIR = os.getenv("MEDIA_DIR", "data")
 
 
 @asynccontextmanager
@@ -59,6 +62,20 @@ app.include_router(usuario.router)
 app.include_router(modelo.router)
 app.include_router(modelo_cnn.router)
 app.include_router(diagnostico.router)
+
+os.makedirs(MEDIA_DIR, exist_ok=True)
+
+
+# Servir los PNG de espectrogramas. Se usa una ruta normal (no StaticFiles.mount)
+# para que funcione con root_path detrás del proxy. Nombres UUID no adivinables.
+@app.get("/media/{ruta:path}")
+def servir_media(ruta: str):
+    base = os.path.abspath(MEDIA_DIR)
+    destino = os.path.abspath(os.path.join(base, ruta))
+    # Prevención de path traversal: el archivo debe quedar dentro de MEDIA_DIR.
+    if not destino.startswith(base + os.sep) or not os.path.isfile(destino):
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    return FileResponse(destino)
 
 
 @app.get("/")

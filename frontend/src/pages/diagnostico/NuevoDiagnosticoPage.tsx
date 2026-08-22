@@ -10,10 +10,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { obtenerCnnActivo } from '../../api/catalogo'
-import type { AnalisisResultado } from '../../api/diagnostico'
 import { MobileShell } from '../../components/MobileShell'
-import type { DatosMoto, ModeloCNN, MotoResumen } from '../../types'
-import type { EspectrogramaMel } from '../../utils/melSpectrogram'
+import type { Diagnostico, DatosMoto, ModeloCNN, MotoResumen } from '../../types'
 import { PasoAudio } from './PasoAudio'
 import { PasoDatosMoto } from './PasoDatosMoto'
 import { PasoResultado } from './PasoResultado'
@@ -36,8 +34,7 @@ export function NuevoDiagnosticoPage() {
   const [paso, setPaso] = useState(0)
   const [datosMoto, setDatosMoto] = useState<DatosMoto>(MOTO_VACIA)
   const [resumen, setResumen] = useState<MotoResumen | null>(null)
-  const [espectrograma, setEspectrograma] = useState<EspectrogramaMel | null>(null)
-  const [resultado, setResultado] = useState<AnalisisResultado | null>(null)
+  const [diagnostico, setDiagnostico] = useState<Diagnostico | null>(null)
   const [cnn, setCnn] = useState<ModeloCNN | null>(null)
 
   useEffect(() => {
@@ -54,8 +51,7 @@ export function NuevoDiagnosticoPage() {
   function reiniciar() {
     setDatosMoto(MOTO_VACIA)
     setResumen(null)
-    setEspectrograma(null)
-    setResultado(null)
+    setDiagnostico(null)
     setPaso(0)
   }
 
@@ -111,24 +107,16 @@ export function NuevoDiagnosticoPage() {
         {paso === 1 && (
           <PasoAudio
             resumen={resumen}
-            cilindraje={datosMoto.cilindraje}
+            datos={datosMoto}
             onEditar={() => setPaso(0)}
-            onAnalizado={(esp, res) => {
-              setEspectrograma(esp)
-              setResultado(res)
+            onAnalizado={(diag) => {
+              setDiagnostico(diag)
               setPaso(2)
             }}
           />
         )}
-        {paso === 2 && espectrograma && resultado && (
-          <PasoResultado
-            datosMoto={datosMoto}
-            resumen={resumen}
-            espectrograma={espectrograma}
-            resultado={resultado}
-            cnn={cnn}
-            onOtro={reiniciar}
-          />
+        {paso === 2 && diagnostico && (
+          <PasoResultado diagnostico={diagnostico} cnn={cnn} onOtro={reiniciar} />
         )}
       </Box>
     </MobileShell>

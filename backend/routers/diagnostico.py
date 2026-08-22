@@ -1,36 +1,63 @@
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+import logging
+import os
+import uuid
+from typing import Optional
+
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    UploadFile,
+    status,
+)
 from sqlalchemy.orm import Session
 
+import crud.modelo as crud_modelo
+import crud.modelo_cnn as crud_cnn
+import services.diagnostico as service
 from database import get_db
 from models.user import Usuario
-from schemas.diagnostico import (
-    AnalisisResultado,
-    DiagnosticoCreate,
-    DiagnosticoCreateIn,
-    DiagnosticoRead,
-)
+from schemas.diagnostico import DiagnosticoCreate, DiagnosticoDetalle
 from services.cnn_service import CNNService
 from utils.auth import get_current_user
 from utils.cnn import get_cnn_service
-import services.diagnostico as service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/diagnosticos", tags=["Diagnosticos"])
 
 FORMATOS_AUDIO = {"wav", "mp3", "m4a", "ogg", "webm"}
 MAX_AUDIO_BYTES = 20 * 1024 * 1024  # 20 MB
 
+# Carpeta donde se guardan los PNG de los espectrogramas (dentro del volumen data).
+ESPECTROGRAMAS_DIR = os.getenv("ESPECTROGRAMAS_DIR", "data/espectrogramas")
 
-@router.post("/analizar", response_model=AnalisisResultado)
+
+@router.post("/analizar", response_model=DiagnosticoDetalle)
 async def analizar(
     audio: UploadFile = File(...),
-    cilindraje: int = Form(...),
+    id_modelo: int = Form(...),
+    anio: int = Form(...),
+    kilometraje: Optional[int] = Form(None),
+    notas: Optional[str] = Form(None),
     current: Usuario = Depends(get_current_user),
     cnn: CNNService = Depends(get_cnn_service),
+    db: Session = Depends(get_db),
 ):
-    """Audio + cilindraje -> inferencia del CNN. No persiste todavía."""
-    if cilindraje not in (125, 150, 200):
+    """Audio + datos de la moto -> inferencia del CNN + persistencia.
+
+    En la BD se guarda la IMAGEN del espectrograma (PNG), nunca el audio.
+    """
+    modelo = crud_modelo.get(db, id_modelo)
+    if modelo is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No existe el modelo indicado")
+
+    cnn_activo = crud_cnn.get_activo(db)
+    if cnn_activo is None:
         raise HTTPException(
-            status.HTTP_400_BAD_REQUEST, "Cilindraje debe ser 125, 150 o 200"
+            status.HTTP_503_SERVICE_UNAVAILABLE, "No hay modelo CNN activo"
         )
 
     ext = (audio.filename or "").rsplit(".", 1)[-1].lower()
@@ -48,28 +75,48 @@ async def analizar(
             status.HTTP_400_BAD_REQUEST, "Archivo demasiado grande (máx. 20 MB)"
         )
 
+    # El cilindraje que entra al modelo sale del modelo de moto, no del cliente.
+    cilindraje = modelo.cilindraje
+
     try:
-        return cnn.predecir(audio_bytes, cilindraje)
+        resultado = cnn.predecir(audio_bytes, cilindraje)
     except Exception:
+        logger.exception("Falló la inferencia del CNN")
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
             "No se pudo procesar el audio. Verifica que sea una grabación válida.",
         )
 
+    # Genera y guarda el PNG del espectrograma. El nombre es un UUID (no adivinable).
+    os.makedirs(ESPECTROGRAMAS_DIR, exist_ok=True)
+    nombre_png = f"{uuid.uuid4().hex}.png"
+    ruta_absoluta = os.path.join(ESPECTROGRAMAS_DIR, nombre_png)
+    try:
+        cnn.generar_espectrograma_png(audio_bytes, ruta_absoluta)
+    except Exception:
+        logger.exception("Falló la generación del espectrograma PNG")
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "No se pudo generar el espectrograma del audio.",
+        )
 
-@router.post("", response_model=DiagnosticoRead, status_code=status.HTTP_201_CREATED)
-def crear(
-    datos: DiagnosticoCreateIn,
-    current: Usuario = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    # El id_usuario sale del token, no del body: nadie crea diagnósticos a nombre de otro.
-    completo = DiagnosticoCreate(**datos.model_dump(), id_usuario=current.id_usuario)
-    return service.crear(db, completo)
+    datos = DiagnosticoCreate(
+        id_usuario=current.id_usuario,
+        id_modelo=id_modelo,
+        id_modelo_cnn=cnn_activo.id_modelo_cnn,
+        anio=anio,
+        kilometraje=kilometraje,
+        notas=notas,
+        espectrograma_ref=f"espectrogramas/{nombre_png}",
+        resultado=resultado["clase"],
+        confianza=resultado["confianza"],
+    )
+    creado = service.crear(db, datos)
+    return service.obtener_detalle(db, creado.id_diagnostico)
 
 
 # Historial del usuario autenticado. Debe ir antes de /{id_diagnostico}.
-@router.get("/mis", response_model=list[DiagnosticoRead])
+@router.get("/mis", response_model=list[DiagnosticoDetalle])
 def mis_diagnosticos(
     skip: int = 0,
     limit: int = 100,
@@ -79,16 +126,16 @@ def mis_diagnosticos(
     return service.historial_usuario(db, current.id_usuario, skip, limit)
 
 
-@router.get("/{id_diagnostico}", response_model=DiagnosticoRead)
+@router.get("/{id_diagnostico}", response_model=DiagnosticoDetalle)
 def obtener(
     id_diagnostico: int,
     current: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    diag = service.obtener(db, id_diagnostico)
-    if diag.id_usuario != current.id_usuario:
+    detalle = service.obtener_detalle(db, id_diagnostico)
+    if detalle.id_usuario != current.id_usuario:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="No puedes ver diagnósticos de otro usuario",
         )
-    return diag
+    return detalle

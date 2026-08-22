@@ -5,8 +5,18 @@ import crud.usuario as crud_usuario
 import crud.modelo as crud_modelo
 import crud.modelo_cnn as crud_cnn
 from models.diagnostico import Diagnostico
-from schemas.diagnostico import DiagnosticoCreate
+from schemas.diagnostico import DiagnosticoCreate, DiagnosticoDetalle, DiagnosticoRead
 from services.exceptions import NotFoundError
+
+
+def _a_detalle(fila) -> DiagnosticoDetalle:
+    diag, marca, modelo, cilindraje = fila
+    return DiagnosticoDetalle(
+        **DiagnosticoRead.model_validate(diag).model_dump(),
+        marca=marca,
+        modelo=modelo,
+        cilindraje=cilindraje,
+    )
 
 
 def obtener(db: Session, id_diagnostico: int) -> Diagnostico:
@@ -16,12 +26,20 @@ def obtener(db: Session, id_diagnostico: int) -> Diagnostico:
     return diag
 
 
+def obtener_detalle(db: Session, id_diagnostico: int) -> DiagnosticoDetalle:
+    fila = crud_diag.get_detalle(db, id_diagnostico)
+    if fila is None:
+        raise NotFoundError(f"No existe el diagnóstico {id_diagnostico}")
+    return _a_detalle(fila)
+
+
 def historial_usuario(
     db: Session, id_usuario: int, skip: int = 0, limit: int = 100
-) -> list[Diagnostico]:
+) -> list[DiagnosticoDetalle]:
     if crud_usuario.get(db, id_usuario) is None:
         raise NotFoundError(f"No existe el usuario {id_usuario}")
-    return crud_diag.get_by_usuario(db, id_usuario, skip, limit)
+    filas = crud_diag.get_detalle_by_usuario(db, id_usuario, skip, limit)
+    return [_a_detalle(f) for f in filas]
 
 
 def crear(db: Session, datos: DiagnosticoCreate) -> Diagnostico:

@@ -14,16 +14,15 @@ import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import { useEffect, useRef, useState } from 'react'
 
-import { analizarAudio, type AnalisisResultado } from '../../api/diagnostico'
+import { analizarAudio } from '../../api/diagnostico'
 import { useAuth } from '../../auth/AuthContext'
-import { generarEspectrogramaMel, type EspectrogramaMel } from '../../utils/melSpectrogram'
-import type { Cilindraje, MotoResumen } from '../../types'
+import type { DatosMoto, Diagnostico, MotoResumen } from '../../types'
 
 interface Props {
   resumen: MotoResumen | null
-  cilindraje: Cilindraje | ''
+  datos: DatosMoto
   onEditar: () => void
-  onAnalizado: (esp: EspectrogramaMel, resultado: AnalisisResultado) => void
+  onAnalizado: (diagnostico: Diagnostico) => void
 }
 
 // Extensión de archivo a partir del MIME del blob (ej. "audio/webm;codecs=opus" -> "webm").
@@ -39,7 +38,7 @@ const RECOMENDACIONES = [
   'Celular a 20-30 cm del motor',
 ]
 
-export function PasoAudio({ resumen, cilindraje, onEditar, onAnalizado }: Props) {
+export function PasoAudio({ resumen, datos, onEditar, onAnalizado }: Props) {
   const { token } = useAuth()
   const [grabando, setGrabando] = useState(false)
   const [segundos, setSegundos] = useState(0)
@@ -105,17 +104,14 @@ export function PasoAudio({ resumen, cilindraje, onEditar, onAnalizado }: Props)
   }
 
   async function analizar() {
-    if (!audio || cilindraje === '') return
+    if (!audio || datos.id_modelo === '' || datos.anio === '') return
     setAnalizando(true)
     setError(null)
     try {
-      // El espectrograma del navegador es un PREVIEW; el resultado lo da el CNN
-      // del backend, que regenera su propio espectrograma con librosa.
-      const [esp, resultado] = await Promise.all([
-        generarEspectrogramaMel(audio.blob),
-        analizarAudio(audio.blob, audio.nombre, cilindraje, token),
-      ])
-      onAnalizado(esp, resultado)
+      // El backend regenera el espectrograma con librosa, corre el CNN y
+      // persiste la imagen. Devuelve el diagnóstico ya guardado.
+      const diagnostico = await analizarAudio(audio.blob, audio.nombre, datos, token)
+      onAnalizado(diagnostico)
     } catch (e) {
       setError(
         e instanceof Error
@@ -268,7 +264,7 @@ export function PasoAudio({ resumen, cilindraje, onEditar, onAnalizado }: Props)
         startIcon={analizando ? <CircularProgress size={18} color="inherit" /> : null}
         sx={{ mt: 3 }}
       >
-        {analizando ? 'Generando espectrograma…' : 'Analizar audio'}
+        {analizando ? 'Analizando…' : 'Analizar audio'}
       </Button>
     </Box>
   )

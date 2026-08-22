@@ -100,44 +100,39 @@ class CNNService:
 
         return {"clase": clase, "confianza": confianza, "valor_raw": round(raw, 6)}
 
+    @staticmethod
+    def _magma(x: np.ndarray) -> np.ndarray:
+        """Colormap tipo 'magma' por interpolación de anclas. x en [0, 1]."""
+        stops = np.array([0.0, 0.2, 0.4, 0.6, 0.8, 0.9, 1.0])
+        r = np.array([0, 40, 101, 159, 212, 245, 252])
+        g = np.array([0, 11, 21, 42, 72, 125, 253])
+        b = np.array([4, 84, 110, 99, 66, 21, 191])
+        rgb = np.stack(
+            [np.interp(x, stops, r), np.interp(x, stops, g), np.interp(x, stops, b)],
+            axis=-1,
+        )
+        return rgb.astype(np.uint8)
+
     def generar_espectrograma_png(self, audio_bytes: bytes, output_path: str) -> str:
-        """Genera y guarda el espectrograma como PNG (para persistir en BD la imagen)."""
-        import matplotlib
+        """Guarda como PNG el MISMO espectrograma que entra al modelo.
 
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-        import librosa.display
+        Reutiliza _audio_a_espectrograma (matriz normalizada [0,1], forma
+        (n_mels, T)) para que la imagen sea idéntica a la entrada de la CNN.
+        Usa Pillow (sin matplotlib) para mantener la imagen liviana.
+        """
+        from PIL import Image
 
-        cfg = self.mel_config
-        y, sr = librosa.load(
-            io.BytesIO(audio_bytes),
-            sr=cfg["sample_rate"],
-            duration=cfg["duration_seconds"],
+        mel = self._audio_a_espectrograma(audio_bytes)
+
+        # Frecuencias bajas abajo (como en un espectrograma clásico).
+        img = self._magma(np.flipud(mel))
+        imagen = Image.fromarray(img, mode="RGB")
+
+        # Escalar para que se vea nítido en pantalla sin perder la relación.
+        alto_destino = 256
+        escala = alto_destino / imagen.height
+        imagen = imagen.resize(
+            (int(imagen.width * escala), alto_destino), Image.BILINEAR
         )
-
-        mel = librosa.feature.melspectrogram(
-            y=y,
-            sr=sr,
-            n_fft=cfg["n_fft"],
-            hop_length=cfg["hop_length"],
-            n_mels=cfg["n_mels"],
-            fmin=cfg["fmin"],
-            fmax=cfg["fmax"],
-        )
-        mel_db = librosa.power_to_db(mel, ref=np.max)
-
-        fig, ax = plt.subplots(1, 1, figsize=(8, 4))
-        librosa.display.specshow(
-            mel_db,
-            sr=sr,
-            hop_length=cfg["hop_length"],
-            x_axis="time",
-            y_axis="mel",
-            ax=ax,
-            fmin=cfg["fmin"],
-            fmax=cfg["fmax"],
-        )
-        plt.tight_layout()
-        fig.savefig(output_path, dpi=100, bbox_inches="tight")
-        plt.close(fig)
+        imagen.save(output_path, format="PNG")
         return output_path

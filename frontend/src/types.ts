@@ -48,3 +48,21 @@ export interface MotoResumen {
   modelo: string
   cilindraje: Cilindraje
 }
+
+// Diagnóstico persistido que devuelve el backend (con nombres ya resueltos).
+export interface Diagnostico {
+  id_diagnostico: number
+  id_usuario: number
+  id_modelo: number
+  id_modelo_cnn: number
+  anio: number
+  kilometraje: number | null
+  notas: string | null
+  espectrograma_ref: string
+  resultado: 'normal' | 'anomalia'
+  confianza: number
+  fecha_diagnostico: string
+  marca: string
+  modelo: string
+  cilindraje: number
+}

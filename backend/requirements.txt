@@ -21,3 +21,4 @@ uvicorn==0.52.3
 python-multipart==0.0.20
 tensorflow-cpu==2.18.0
 librosa==0.10.2.post1
+Pillow==11.0.0

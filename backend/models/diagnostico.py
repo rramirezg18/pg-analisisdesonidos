@@ -36,7 +36,7 @@ class Diagnostico(Base):
     anio = Column(Integer, nullable=False)
     kilometraje = Column(Integer, nullable=True)
     notas = Column(Text, nullable=True)
-    audio_ref = Column(Text, nullable=False)
+    espectrograma_ref = Column(Text, nullable=False)
     resultado = Column(Text, nullable=False)
     confianza = Column(Float, nullable=False)
     fecha_diagnostico = Column(

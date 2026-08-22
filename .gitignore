@@ -27,3 +27,6 @@ frontend/svg/
 .vscode/*
 !.vscode/extensions.json
 .idea/
+
+
+.archivoscnn

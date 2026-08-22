@@ -1,25 +1,27 @@
 import { API_URL } from '../config'
-import type { Cilindraje } from '../types'
-import { ApiError } from './client'
+import type { DatosMoto, Diagnostico } from '../types'
+import { ApiError, apiFetch } from './client'
 
-// Lo que devuelve el endpoint de inferencia del backend.
-export interface AnalisisResultado {
-  clase: 'normal' | 'anomalia'
-  confianza: number // 0..100
-  valor_raw: number // salida cruda del sigmoid (0..1)
+// URL pública de la imagen del espectrograma (servida estáticamente por el backend).
+export function urlEspectrograma(ref: string): string {
+  return `${API_URL}/media/${ref}`
 }
 
-// Envía el AUDIO crudo (no el espectrograma) + cilindraje al backend, que
-// regenera el espectrograma con librosa y corre el CNN. El audio no se guarda.
+// Envía el AUDIO crudo + los datos de la moto. El backend regenera el
+// espectrograma con librosa, corre el CNN, guarda la IMAGEN (no el audio) y
+// devuelve el diagnóstico persistido.
 export async function analizarAudio(
   audio: Blob,
   nombreArchivo: string,
-  cilindraje: Cilindraje,
+  datos: DatosMoto,
   token: string | null,
-): Promise<AnalisisResultado> {
+): Promise<Diagnostico> {
   const form = new FormData()
   form.append('audio', audio, nombreArchivo)
-  form.append('cilindraje', String(cilindraje))
+  form.append('id_modelo', String(datos.id_modelo))
+  form.append('anio', String(datos.anio))
+  if (datos.kilometraje !== '') form.append('kilometraje', String(datos.kilometraje))
+  if (datos.notas.trim()) form.append('notas', datos.notas.trim())
 
   // Nota: NO fijamos Content-Type; el navegador pone el boundary de multipart.
   const headers = new Headers()
@@ -41,4 +43,12 @@ export async function analizarAudio(
     throw new ApiError(res.status, detail)
   }
   return res.json()
+}
+
+export function listarMisDiagnosticos(token: string | null) {
+  return apiFetch<Diagnostico[]>('/diagnosticos/mis', {}, token)
+}
+
+export function obtenerDiagnostico(id: number, token: string | null) {
+  return apiFetch<Diagnostico>(`/diagnosticos/${id}`, {}, token)
 }

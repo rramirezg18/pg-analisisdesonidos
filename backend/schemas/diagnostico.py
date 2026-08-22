@@ -11,7 +11,7 @@ class DiagnosticoCreateIn(BaseModel):
     anio: int = Field(..., ge=1980, le=2100)
     kilometraje: Optional[int] = Field(None, ge=0)
     notas: Optional[str] = None
-    audio_ref: str = Field(..., min_length=1)
+    espectrograma_ref: str = Field(..., min_length=1)
     resultado: Literal["normal", "anomalia"]
     confianza: float = Field(..., ge=0, le=100)
 
@@ -29,7 +29,15 @@ class DiagnosticoRead(DiagnosticoCreateIn):
     fecha_diagnostico: datetime
 
 
-# Resultado que devuelve la inferencia del CNN (sin persistir todavía).
+# Lectura enriquecida con los nombres de marca/modelo para mostrar en la UI
+# (historial y detalle) sin que el frontend tenga que resolver cada id.
+class DiagnosticoDetalle(DiagnosticoRead):
+    marca: str
+    modelo: str
+    cilindraje: int
+
+
+# Resultado que devuelve la inferencia del CNN (uso interno del servicio).
 class AnalisisResultado(BaseModel):
     clase: Literal["normal", "anomalia"]
     confianza: float = Field(..., ge=0, le=100)
