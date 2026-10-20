@@ -13,7 +13,10 @@ from models.marca import Marca
 from models.modelo import Modelo
 from models.modelo_cnn import ModeloCNN
 
-MARCAS = ["Honda", "Yamaha", "Suzuki", "Bajaj", "TVS", "Hero", "Italika"]
+MARCAS = [
+    "Honda", "Yamaha", "Suzuki", "Bajaj", "TVS", "Hero", "Italika",
+    "Haojue", "Keeway", "Kymco", "AKT",
+]
 
 # (marca, nombre_modelo, cilindraje)
 # Modelos de 125 a 200 cc de uso común en Guatemala. El cilindraje es el nominal
@@ -61,6 +64,16 @@ MODELOS = [
     ("Italika", "DM150", 150),
     ("Italika", "DM200", 200),
     ("Italika", "Vort-X 200", 200),
+    ("Haojue", "HJ125-7", 125),
+    ("Haojue", "DK150", 150),
+    ("Haojue", "NK150", 150),
+    ("Haojue", "DR160", 160),
+    ("Keeway", "RKS 150", 150),
+    ("Keeway", "Superlight 200", 200),
+    ("Kymco", "Agility 125", 125),
+    ("Kymco", "Like 150i", 150),
+    ("AKT", "NKD 125", 125),
+    ("AKT", "CR4 125", 125),
 ]
 
 
