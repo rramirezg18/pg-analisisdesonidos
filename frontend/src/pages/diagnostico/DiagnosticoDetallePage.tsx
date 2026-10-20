@@ -175,11 +175,6 @@ export function DiagnosticoDetallePage() {
                 </>
               )}
             </Card>
-
-            <Alert severity="warning" sx={{ mt: 2, borderRadius: 3 }}>
-              <strong>Aviso:</strong> diagnóstico preliminar. No sustituye la revisión
-              de un mecánico certificado.
-            </Alert>
           </>
         )}
       </Box>

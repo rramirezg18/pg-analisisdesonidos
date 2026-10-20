@@ -13,7 +13,7 @@ export interface Marca {
   nombre: string
 }
 
-export type Cilindraje = 125 | 150 | 200
+export type Cilindraje = 125 | 150 | 155 | 160 | 180 | 190 | 200
 
 export interface Modelo {
   id_modelo: number

@@ -2,7 +2,6 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import HistoryIcon from '@mui/icons-material/History'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
-import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
@@ -129,11 +128,6 @@ export function PasoResultado({ diagnostico, cnn, onOtro }: Props) {
         <Divider />
         <Fila etiqueta="Modelo CNN" valor={cnn?.version ?? '—'} />
       </Card>
-
-      <Alert severity="warning" sx={{ mt: 2, borderRadius: 3 }}>
-        <strong>Aviso:</strong> diagnóstico preliminar. No sustituye la revisión de
-        un mecánico certificado.
-      </Alert>
 
       <Stack spacing={1.5} sx={{ mt: 3 }}>
         <Button

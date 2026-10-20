@@ -19,6 +19,7 @@ interface AuthContextValue {
   login: (token: string) => Promise<void>
   logout: () => void
   loginConGithub: () => void
+  loginConGoogle: () => void
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -73,9 +74,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = `${API_URL}/auth/github/login`
   }
 
+  function loginConGoogle() {
+    window.location.href = `${API_URL}/auth/google/login`
+  }
+
   return (
     <AuthContext.Provider
-      value={{ usuario, token, cargando, login, logout, loginConGithub }}
+      value={{ usuario, token, cargando, login, logout, loginConGithub, loginConGoogle }}
     >
       {children}
     </AuthContext.Provider>

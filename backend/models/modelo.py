@@ -26,7 +26,7 @@ class Modelo(Base):
     __table_args__ = (
         UniqueConstraint("id_marca", "nombre", name="uq_modelo_marca_nombre"),
         CheckConstraint(
-            "cilindraje IN (125, 150, 200)", name="ck_modelo_cilindraje"
+            "cilindraje IN (125, 150, 155, 160, 180, 190, 200)", name="ck_modelo_cilindraje"
         ),
         Index("idx_modelo_marca", "id_marca"),
     )

@@ -34,8 +34,6 @@ function extensionDe(tipo: string): string {
 const RECOMENDACIONES = [
   'Duración mínima: 4 segundos',
   'Motor en ralentí, sin acelerar',
-  'Ambiente silencioso',
-  'Celular a 20-30 cm del motor',
 ]
 
 export function PasoAudio({ resumen, datos, onEditar, onAnalizado }: Props) {

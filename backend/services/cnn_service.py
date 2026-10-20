@@ -9,12 +9,37 @@ entrenamiento. Si esos parámetros no coinciden, la predicción es incorrecta.
 import io
 import json
 import logging
+import subprocess
 
 import librosa
 import numpy as np
 from tensorflow import keras
 
 logger = logging.getLogger(__name__)
+
+
+def _transcodificar_a_wav(audio_bytes: bytes) -> bytes:
+    """Decodifica cualquier formato de entrada (webm, mp3, m4a, ogg...) a WAV PCM.
+
+    libsndfile (usado por librosa/soundfile) no soporta contenedores como WebM,
+    que es el formato que produce MediaRecorder en la mayoría de navegadores.
+    Por eso se delega la decodificación a ffmpeg, que sí entiende esos formatos.
+    """
+    try:
+        resultado = subprocess.run(
+            ["ffmpeg", "-i", "pipe:0", "-f", "wav", "-ar", "44100", "-ac", "1", "pipe:1"],
+            input=audio_bytes,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=True,
+            timeout=30,
+        )
+    except subprocess.CalledProcessError as exc:
+        raise ValueError(
+            "ffmpeg no pudo decodificar el audio: "
+            f"{exc.stderr.decode(errors='ignore')[-500:]}"
+        ) from exc
+    return resultado.stdout
 
 
 class CNNService:
@@ -40,8 +65,9 @@ class CNNService:
     def _audio_a_espectrograma(self, audio_bytes: bytes) -> np.ndarray:
         cfg = self.mel_config
 
+        wav_bytes = _transcodificar_a_wav(audio_bytes)
         y, _ = librosa.load(
-            io.BytesIO(audio_bytes),
+            io.BytesIO(wav_bytes),
             sr=cfg["sample_rate"],
             duration=cfg["duration_seconds"],
         )

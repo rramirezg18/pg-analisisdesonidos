@@ -13,16 +13,54 @@ from models.marca import Marca
 from models.modelo import Modelo
 from models.modelo_cnn import ModeloCNN
 
-MARCAS = ["Honda", "Yamaha", "Suzuki", "Bajaj"]
+MARCAS = ["Honda", "Yamaha", "Suzuki", "Bajaj", "TVS", "Hero", "Italika"]
 
 # (marca, nombre_modelo, cilindraje)
+# Modelos de 125 a 200 cc de uso común en Guatemala. El cilindraje es el nominal
+# comercial (la BD admite 125, 150, 155, 160, 180, 190 o 200).
 MODELOS = [
-    ("Honda", "CG150", 150),
+    ("Honda", "CG125", 125),
     ("Honda", "CB125F", 125),
+    ("Honda", "XR125L", 125),
+    ("Honda", "CG150", 150),
+    ("Honda", "XR150L", 150),
+    ("Honda", "CB160F", 160),
+    ("Honda", "XR190L", 190),
+    ("Honda", "CB190R", 190),
     ("Yamaha", "YBR125", 125),
+    ("Yamaha", "XTZ125", 125),
     ("Yamaha", "FZ150", 150),
+    ("Yamaha", "XTZ150", 150),
+    ("Yamaha", "NMAX 155", 155),
+    ("Yamaha", "R15", 155),
     ("Suzuki", "GN125", 125),
+    ("Suzuki", "EN125", 125),
+    ("Suzuki", "Gixxer 155", 155),
+    ("Bajaj", "Discover 125", 125),
+    ("Bajaj", "Boxer 150", 150),
+    ("Bajaj", "Pulsar 150", 150),
+    ("Bajaj", "Pulsar N160", 160),
+    ("Bajaj", "Pulsar NS160", 160),
+    ("Bajaj", "Pulsar 180", 180),
     ("Bajaj", "Pulsar 200", 200),
+    ("Bajaj", "Pulsar NS200", 200),
+    ("TVS", "Raider 125", 125),
+    ("TVS", "Stryker 125", 125),
+    ("TVS", "Apache RTR 150", 150),
+    ("TVS", "Apache RTR 160 4V", 160),
+    ("TVS", "Apache RTR 180", 180),
+    ("TVS", "Apache RTR 200 4V", 200),
+    ("Hero", "Glamour 125", 125),
+    ("Hero", "Ignitor 125", 125),
+    ("Hero", "Hunk 150", 150),
+    ("Hero", "Hunk 160R", 160),
+    ("Hero", "Xtreme 160R", 160),
+    ("Hero", "Xpulse 200", 200),
+    ("Italika", "FT125", 125),
+    ("Italika", "FT150", 150),
+    ("Italika", "DM150", 150),
+    ("Italika", "DM200", 200),
+    ("Italika", "Vort-X 200", 200),
 ]
 
 

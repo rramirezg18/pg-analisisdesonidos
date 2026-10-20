@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class ModeloBase(BaseModel):
     id_marca: int
     nombre: str = Field(..., min_length=1)
-    cilindraje: Literal[125, 150, 200]
+    cilindraje: Literal[125, 150, 155, 160, 180, 190, 200]
 
 
 class ModeloCreate(ModeloBase):

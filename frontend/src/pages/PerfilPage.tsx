@@ -1,5 +1,6 @@
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import GitHubIcon from '@mui/icons-material/GitHub'
+import GoogleIcon from '@mui/icons-material/Google'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import LogoutIcon from '@mui/icons-material/Logout'
 import Avatar from '@mui/material/Avatar'
@@ -55,7 +56,9 @@ export function PerfilPage() {
           </Typography>
           <Chip
             size="small"
-            icon={<GitHubIcon />}
+            icon={
+              usuario?.proveedor_oauth === 'google' ? <GoogleIcon /> : <GitHubIcon />
+            }
             label={usuario?.proveedor_oauth ?? 'oauth'}
             sx={{ textTransform: 'capitalize' }}
           />

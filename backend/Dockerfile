@@ -18,6 +18,6 @@ COPY . .
 # Carpeta donde vive la base SQLite (se monta como volumen en compose).
 RUN mkdir -p /app/data
 
-EXPOSE 8000
+EXPOSE 8001
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]

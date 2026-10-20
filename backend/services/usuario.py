@@ -29,6 +29,10 @@ def login_oauth(db: Session, datos: UsuarioCreate) -> Usuario:
         db, datos.proveedor_oauth, datos.id_externo_proveedor
     )
     if usuario is None:
+        # Mismo email con otro proveedor (p.ej. entró antes con GitHub y ahora con
+        # Google): reutilizamos la cuenta en vez de chocar con el UNIQUE de email.
+        usuario = crud_usuario.get_by_email(db, datos.email)
+    if usuario is None:
         return crud_usuario.create(db, Usuario(**datos.model_dump()))
 
     return crud_usuario.update(

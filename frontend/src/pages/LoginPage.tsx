@@ -1,7 +1,8 @@
-import GitHubIcon from '@mui/icons-material/GitHub'
+//import GitHubIcon from '@mui/icons-material/GitHub'
+import GoogleIcon from '@mui/icons-material/Google'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import Chip from '@mui/material/Chip'
+//import Chip from '@mui/material/Chip'
 import Divider from '@mui/material/Divider'
 import Paper from '@mui/material/Paper'
 import Stack from '@mui/material/Stack'
@@ -34,8 +35,8 @@ const PASOS = [
 ]
 
 export function LoginPage() {
-  const { usuario, cargando, loginConGithub } = useAuth()
-
+  //const { usuario, cargando, loginConGithub, loginConGoogle } = useAuth()
+  const { usuario, cargando, loginConGoogle } = useAuth()
   if (!cargando && usuario) {
     return <Navigate to="/" replace />
   }
@@ -67,8 +68,8 @@ export function LoginPage() {
         <Divider sx={{ mt: 2 }} />
 
         {/* Badge */}
-        <Chip
-          label="Análisis con IA"
+        {/*<Chip
+          //label="Análisis con IA"
           size="small"
           sx={{
             mt: 3,
@@ -77,23 +78,23 @@ export function LoginPage() {
             color: 'primary.dark',
             fontWeight: 600,
             '& .MuiChip-icon': { color: 'primary.main' },
-          }}
+          }}  
           icon={
             <Box
               component="span"
               sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'primary.main' }}
             />
           }
-        />
+        />*/}
 
         {/* Headline + subtítulo */}
         <Typography variant="h4" sx={{ mt: 2 }}>
           Detecta fallas en el motor de tu moto
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+        {/*<Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
           Analizamos el sonido de tu motor en ralentí con una red neuronal para
           detectar anomalías por holgura de válvulas.
-        </Typography>
+        </Typography>*/}
 
         {/* Espectrograma */}
         <Box
@@ -154,12 +155,18 @@ export function LoginPage() {
           ))}
         </Stack>
 
-        {/* Botones */}
+        
         <Stack spacing={1.5} sx={{ mt: 4, pb: 3 }}>
-          <Button variant="outlined" color="inherit" disabled fullWidth>
-            Continuar con Google · Próximamente
-          </Button>
           <Button
+            variant="outlined"
+            color="inherit"
+            fullWidth
+            startIcon={<GoogleIcon />}
+            onClick={loginConGoogle}
+          >
+            Continuar con Google
+          </Button>
+          {/*<Button
             variant="contained"
             color="secondary"
             fullWidth
@@ -167,7 +174,7 @@ export function LoginPage() {
             onClick={loginConGithub}
           >
             Continuar con GitHub
-          </Button>
+          </Button>*/}
         </Stack>
       </Box>
     </MobileShell>

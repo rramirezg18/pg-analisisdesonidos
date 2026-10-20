@@ -21,10 +21,10 @@ export function HomePage() {
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="body2" color="text.secondary">
-        Hola,
+        Bienvenido,
       </Typography>
       <Typography variant="h4" sx={{ mb: 3 }}>
-        {primerNombre} 👋
+        {primerNombre}
       </Typography>
 
       {/* CTA principal: iniciar el flujo de diagnóstico */}
@@ -43,9 +43,9 @@ export function HomePage() {
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
             Nuevo diagnóstico
           </Typography>
-          <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+          {/*<Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
             Graba el motor y detecta anomalías con IA.
-          </Typography>
+          </Typography>*/}
           <Button
             variant="contained"
             startIcon={<AddIcon />}
@@ -61,7 +61,7 @@ export function HomePage() {
         </CardActionArea>
       </Card>
 
-      {/* Diagnósticos recientes (empty state por ahora) */}
+      {/* Diagnósticos recientes */}
       <Stack
         direction="row"
         sx={{ justifyContent: 'space-between', alignItems: 'center', mt: 4 }}
