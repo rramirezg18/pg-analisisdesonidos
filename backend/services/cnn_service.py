@@ -17,6 +17,21 @@ from tensorflow import keras
 
 logger = logging.getLogger(__name__)
 
+# Margen para el redondeo de los codificadores (una grabación "de 4 s" del
+# navegador puede durar 3.98 s). Por debajo de duración - margen se rechaza.
+TOLERANCIA_DURACION_S = 0.1
+
+
+class AudioDemasiadoCorto(ValueError):
+    """El audio dura menos de lo que necesita el modelo (duration_seconds)."""
+
+    def __init__(self, duracion: float, minimo: float):
+        self.duracion = duracion
+        self.minimo = minimo
+        super().__init__(
+            f"El audio debe durar al menos {minimo:g} s (duró {duracion:.1f} s)."
+        )
+
 
 def _transcodificar_a_wav(audio_bytes: bytes) -> bytes:
     """Decodifica cualquier formato de entrada (webm, mp3, m4a, ogg...) a WAV PCM.
@@ -72,8 +87,15 @@ class CNNService:
             duration=cfg["duration_seconds"],
         )
 
-        # Recortar/rellenar a la duración exacta esperada por el modelo.
+        # El modelo se entrenó con ventanas de duration_seconds: un audio más
+        # corto se rechaza en vez de rellenarse con silencio (RF-05).
         target_len = int(cfg["sample_rate"] * cfg["duration_seconds"])
+        minimo_len = int(cfg["sample_rate"] * (cfg["duration_seconds"] - TOLERANCIA_DURACION_S))
+        if len(y) < minimo_len:
+            raise AudioDemasiadoCorto(len(y) / cfg["sample_rate"], cfg["duration_seconds"])
+
+        # Recortar/rellenar a la duración exacta esperada por el modelo
+        # (el relleno solo cubre el margen de tolerancia).
         if len(y) < target_len:
             y = np.pad(y, (0, target_len - len(y)))
         else:

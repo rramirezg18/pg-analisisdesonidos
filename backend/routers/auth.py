@@ -60,7 +60,9 @@ def _redirigir_al_frontend(db: Session, identidad: UsuarioCreate) -> RedirectRes
     """Upsert del usuario, firma NUESTRO JWT y lo manda al frontend."""
     usuario = service_usuario.login_oauth(db, identidad)
     jwt_token = crear_token_acceso({"sub": str(usuario.id_usuario)})
-    redireccion = RedirectResponse(f"{FRONTEND_URL}/auth/callback?token={jwt_token}")
+    # El token va en el fragmento (#): el navegador no lo envía a ningún servidor,
+    # así no queda en logs de nginx ni en el header Referer.
+    redireccion = RedirectResponse(f"{FRONTEND_URL}/auth/callback#token={jwt_token}")
     redireccion.delete_cookie("oauth_state")
     return redireccion
 

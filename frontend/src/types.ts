@@ -6,6 +6,7 @@ export interface Usuario {
   nombre: string | null
   fecha_registro: string
   ultimo_acceso: string | null
+  es_admin: boolean
 }
 
 export interface Marca {
@@ -40,6 +41,9 @@ export interface DatosMoto {
   anio: number | ''
   kilometraje: number | ''
   notas: string
+  // Preguntas previas al resultado (datos para la tesis, OE2 y OE3).
+  notaba_sintomas: 'si' | 'no' | ''
+  confianza_antes: number | ''
 }
 
 // Nombres resueltos de la moto, para mostrar en los pasos 2 y 3.
@@ -65,4 +69,86 @@ export interface Diagnostico {
   marca: string
   modelo: string
   cilindraje: number
+  notaba_sintomas: 'si' | 'no' | null
+}
+
+export type Veredicto = 'sano' | 'leve' | 'grave'
+
+// Diagnóstico visto por el admin, con el veredicto del mecánico.
+export interface DiagnosticoAdmin extends Diagnostico {
+  email_usuario: string
+  veredicto_mecanico: Veredicto | null
+  fecha_validacion: string | null
+  tiene_evaluacion: boolean
+}
+
+// Encuesta del usuario al ver el resultado (escala 1..5).
+export interface EvaluacionNueva {
+  confianza_antes: number
+  confianza_despues: number
+  ayudo_decidir: 'si' | 'parcial' | 'no'
+}
+
+// ---- Panel de investigación (GET /admin/estadisticas) ----
+// Porcentajes de 0 a 100; null cuando aún no hay casos.
+
+export interface GrupoDeteccion {
+  n: number
+  detectados: number
+  porcentaje: number | null
+  confianza_promedio: number | null
+}
+
+export interface Conteo {
+  etiqueta: string
+  n: number
+}
+
+export interface Estadisticas {
+  resumen: {
+    total_diagnosticos: number
+    validados: number
+    pendientes: number
+    evaluaciones: number
+    usuarios: number
+  }
+  exactitud: {
+    n: number
+    coincidencias: number
+    porcentaje: number | null
+    matriz: { vp: number; fn: number; fp: number; vn: number }
+    precision: number | null
+    sensibilidad: number | null
+    especificidad: number | null
+    f1: number | null
+    por_version: {
+      version: string
+      exactitud_entrenamiento: number
+      n: number
+      porcentaje: number | null
+    }[]
+  }
+  deteccion_temprana: {
+    leve: GrupoDeteccion
+    grave: GrupoDeteccion
+    sin_sintomas: GrupoDeteccion
+  }
+  confianza_usuario: {
+    n: number
+    distribucion_antes: number[]
+    distribucion_despues: number[]
+    promedio_antes: number | null
+    promedio_despues: number | null
+    pct_alta_antes: number | null
+    pct_alta_despues: number | null
+    ayudo_si: number
+    ayudo_parcial: number
+    ayudo_no: number
+    promedio_despues_acierto: number | null
+    promedio_despues_fallo: number | null
+  }
+  uso: {
+    por_cilindraje: Conteo[]
+    por_mes: Conteo[]
+  }
 }

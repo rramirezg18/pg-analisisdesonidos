@@ -4,11 +4,14 @@ import Button from '@mui/material/Button'
 import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
+import ToggleButton from '@mui/material/ToggleButton'
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Typography from '@mui/material/Typography'
 import { useEffect, useState } from 'react'
 
 import { listarMarcas, listarModelosPorMarca } from '../../api/catalogo'
 import { useAuth } from '../../auth/AuthContext'
+import { EscalaConfianza } from '../../components/EscalaConfianza'
 import type { DatosMoto, Marca, Modelo, MotoResumen } from '../../types'
 
 interface Props {
@@ -63,7 +66,11 @@ export function PasoDatosMoto({ valor, onCambio, onResumen, onSiguiente }: Props
   const anioValido =
     valor.anio !== '' && valor.anio >= 1980 && valor.anio <= anioActual + 1
   const valido =
-    valor.id_marca !== '' && valor.id_modelo !== '' && anioValido
+    valor.id_marca !== '' &&
+    valor.id_modelo !== '' &&
+    anioValido &&
+    valor.notaba_sintomas !== '' &&
+    valor.confianza_antes !== ''
 
   return (
     <Box sx={{ px: 3, pb: 3 }}>
@@ -151,6 +158,44 @@ export function PasoDatosMoto({ valor, onCambio, onResumen, onSiguiente }: Props
           onChange={(e) => onCambio({ ...valor, notas: e.target.value })}
         />
       </Stack>
+
+      {/* Se preguntan ANTES del análisis para que el resultado no influya. */}
+      <Typography variant="h6" sx={{ mt: 4 }}>
+        Antes del análisis
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        Dos preguntas rápidas que nos ayudan a evaluar el sistema.
+      </Typography>
+
+      <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+        ¿Usted ya notaba algo raro en la moto?
+      </Typography>
+      <ToggleButtonGroup
+        exclusive
+        fullWidth
+        size="small"
+        color="primary"
+        value={valor.notaba_sintomas}
+        onChange={(_, v: 'si' | 'no' | null) =>
+          v && onCambio({ ...valor, notaba_sintomas: v })
+        }
+      >
+        <ToggleButton value="si" sx={{ textTransform: 'none' }}>
+          Sí
+        </ToggleButton>
+        <ToggleButton value="no" sx={{ textTransform: 'none' }}>
+          No
+        </ToggleButton>
+      </ToggleButtonGroup>
+
+      <Typography variant="body2" sx={{ fontWeight: 600, mt: 2.5, mb: 1 }}>
+        ¿Qué tanta confianza tiene al autorizar una reparación solo con lo que
+        le dice el mecánico?
+      </Typography>
+      <EscalaConfianza
+        valor={valor.confianza_antes}
+        onCambio={(v) => onCambio({ ...valor, confianza_antes: v })}
+      />
 
       <Button
         fullWidth

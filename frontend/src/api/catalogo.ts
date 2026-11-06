@@ -12,3 +12,7 @@ export function listarModelosPorMarca(idMarca: number) {
 export function obtenerCnnActivo() {
   return apiFetch<ModeloCNN>('/modelos-cnn/activo')
 }
+
+export function listarModelosCnn() {
+  return apiFetch<ModeloCNN[]>('/modelos-cnn')
+}

@@ -1,5 +1,5 @@
 import { API_URL } from '../config'
-import type { DatosMoto, Diagnostico } from '../types'
+import type { DatosMoto, Diagnostico, EvaluacionNueva } from '../types'
 import { ApiError, apiFetch } from './client'
 
 // URL pública de la imagen del espectrograma (servida estáticamente por el backend).
@@ -22,6 +22,7 @@ export async function analizarAudio(
   form.append('anio', String(datos.anio))
   if (datos.kilometraje !== '') form.append('kilometraje', String(datos.kilometraje))
   if (datos.notas.trim()) form.append('notas', datos.notas.trim())
+  if (datos.notaba_sintomas) form.append('notaba_sintomas', datos.notaba_sintomas)
 
   // Nota: NO fijamos Content-Type; el navegador pone el boundary de multipart.
   const headers = new Headers()
@@ -51,4 +52,16 @@ export function listarMisDiagnosticos(token: string | null) {
 
 export function obtenerDiagnostico(id: number, token: string | null) {
   return apiFetch<Diagnostico>(`/diagnosticos/${id}`, {}, token)
+}
+
+export function enviarEvaluacion(
+  id: number,
+  evaluacion: EvaluacionNueva,
+  token: string | null,
+) {
+  return apiFetch(
+    `/diagnosticos/${id}/evaluacion`,
+    { method: 'POST', body: JSON.stringify(evaluacion) },
+    token,
+  )
 }

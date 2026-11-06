@@ -31,6 +31,9 @@ function extensionDe(tipo: string): string {
   return sub === 'mpeg' ? 'mp3' : sub === 'x-m4a' ? 'm4a' : sub
 }
 
+// El modelo analiza ventanas de 4 s; el backend rechaza audios más cortos.
+const DURACION_MINIMA_S = 4
+
 const RECOMENDACIONES = [
   'Duración mínima: 4 segundos',
   'Motor en ralentí, sin acelerar',
@@ -49,6 +52,7 @@ export function PasoAudio({ resumen, datos, onEditar, onAnalizado }: Props) {
   const recorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<BlobPart[]>([])
   const timerRef = useRef<number | null>(null)
+  const inicioRef = useRef(0)
 
   useEffect(() => {
     return () => {
@@ -72,11 +76,19 @@ export function PasoAudio({ resumen, datos, onEditar, onAnalizado }: Props) {
       chunksRef.current = []
       rec.ondataavailable = (e) => e.data.size > 0 && chunksRef.current.push(e.data)
       rec.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop())
+        const duracion = (Date.now() - inicioRef.current) / 1000
+        if (duracion < DURACION_MINIMA_S) {
+          setError(
+            `La grabación duró ${duracion.toFixed(1)} s. Graba al menos ${DURACION_MINIMA_S} segundos.`,
+          )
+          return
+        }
         const blob = new Blob(chunksRef.current, { type: rec.mimeType })
         fijarAudio(blob, `grabacion.${extensionDe(rec.mimeType)}`)
-        stream.getTracks().forEach((t) => t.stop())
       }
       rec.start()
+      inicioRef.current = Date.now()
       recorderRef.current = rec
       setGrabando(true)
       setSegundos(0)

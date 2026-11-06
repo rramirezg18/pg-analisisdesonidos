@@ -8,7 +8,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from middleware import setup_middlewares
 from services.cnn_service import CNNService
 from services.exceptions import NotFoundError, ConflictError
-from routers import auth, marca, usuario, modelo, modelo_cnn, diagnostico
+from routers import admin, auth, marca, usuario, modelo, modelo_cnn, diagnostico
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -32,10 +32,16 @@ async def lifespan(app: FastAPI):
     yield
 
 
+# Swagger/ReDoc/OpenAPI solo si se habilitan explícitamente (p. ej. en localhost).
+HABILITAR_DOCS = os.getenv("HABILITAR_DOCS", "false").lower() in ("1", "true", "si")
+
 app = FastAPI(
     title="API Análisis de Sonidos de Motores",
     root_path="/api",
     lifespan=lifespan,
+    docs_url="/docs" if HABILITAR_DOCS else None,
+    redoc_url="/redoc" if HABILITAR_DOCS else None,
+    openapi_url="/openapi.json" if HABILITAR_DOCS else None,
 )
 
 # Orígenes permitidos para CORS (separados por coma en la variable de entorno).
@@ -62,6 +68,7 @@ app.include_router(usuario.router)
 app.include_router(modelo.router)
 app.include_router(modelo_cnn.router)
 app.include_router(diagnostico.router)
+app.include_router(admin.router)
 
 os.makedirs(MEDIA_DIR, exist_ok=True)
 

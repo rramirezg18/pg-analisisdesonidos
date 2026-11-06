@@ -42,6 +42,11 @@ class Diagnostico(Base):
     fecha_diagnostico = Column(
         DateTime, server_default=func.now(), nullable=False
     )
+    # Respuesta del usuario antes de ver el resultado (OE2: detección temprana).
+    notaba_sintomas = Column(Text, nullable=True)
+    # Veredicto del mecánico, registrado por el admin (OE1 y OE2).
+    veredicto_mecanico = Column(Text, nullable=True)
+    fecha_validacion = Column(DateTime, nullable=True)
 
     __table_args__ = (
         CheckConstraint("anio >= 1980 AND anio <= 2100", name="ck_diagnostico_anio"),
@@ -55,6 +60,14 @@ class Diagnostico(Base):
         ),
         CheckConstraint(
             "confianza >= 0 AND confianza <= 100", name="ck_diagnostico_confianza"
+        ),
+        CheckConstraint(
+            "notaba_sintomas IS NULL OR notaba_sintomas IN ('si', 'no')",
+            name="ck_diagnostico_notaba_sintomas",
+        ),
+        CheckConstraint(
+            "veredicto_mecanico IS NULL OR veredicto_mecanico IN ('sano', 'leve', 'grave')",
+            name="ck_diagnostico_veredicto",
         ),
         Index(
             "idx_diagnostico_usuario_fecha",

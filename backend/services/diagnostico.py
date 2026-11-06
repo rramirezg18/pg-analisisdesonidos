@@ -1,12 +1,22 @@
 from sqlalchemy.orm import Session
 
+from datetime import datetime, timezone
+
 import crud.diagnostico as crud_diag
+import crud.evaluacion as crud_eval
 import crud.usuario as crud_usuario
 import crud.modelo as crud_modelo
 import crud.modelo_cnn as crud_cnn
 from models.diagnostico import Diagnostico
-from schemas.diagnostico import DiagnosticoCreate, DiagnosticoDetalle, DiagnosticoRead
-from services.exceptions import NotFoundError
+from models.evaluacion import EvaluacionUsuario
+from schemas.diagnostico import (
+    DiagnosticoAdmin,
+    DiagnosticoCreate,
+    DiagnosticoDetalle,
+    DiagnosticoRead,
+)
+from schemas.evaluacion import EvaluacionCreate
+from services.exceptions import ConflictError, NotFoundError
 
 
 def _a_detalle(fila) -> DiagnosticoDetalle:
@@ -53,3 +63,43 @@ def crear(db: Session, datos: DiagnosticoCreate) -> Diagnostico:
         raise NotFoundError(f"No existe el modelo CNN {datos.id_modelo_cnn}")
 
     return crud_diag.create(db, Diagnostico(**datos.model_dump()))
+
+
+def evaluar(db: Session, id_diagnostico: int, datos: EvaluacionCreate) -> EvaluacionUsuario:
+    """Guarda la encuesta del usuario. Solo se permite una por diagnóstico."""
+    obtener(db, id_diagnostico)
+    if crud_eval.get_by_diagnostico(db, id_diagnostico) is not None:
+        raise ConflictError("Este diagnóstico ya fue evaluado")
+    return crud_eval.create(
+        db, EvaluacionUsuario(id_diagnostico=id_diagnostico, **datos.model_dump())
+    )
+
+
+def listar_admin(
+    db: Session, estado: str | None = None, skip: int = 0, limit: int = 100
+) -> list[DiagnosticoAdmin]:
+    filas = crud_diag.get_detalle_admin(db, estado, skip, limit)
+    return [
+        DiagnosticoAdmin(
+            **_a_detalle((diag, marca, modelo, cc)).model_dump(),
+            email_usuario=email,
+            veredicto_mecanico=diag.veredicto_mecanico,
+            fecha_validacion=diag.fecha_validacion,
+            tiene_evaluacion=id_eval is not None,
+        )
+        for diag, marca, modelo, cc, email, id_eval in filas
+    ]
+
+
+def registrar_veredicto(
+    db: Session, id_diagnostico: int, veredicto: str | None
+) -> Diagnostico:
+    diag = obtener(db, id_diagnostico)
+    return crud_diag.update(
+        db,
+        diag,
+        {
+            "veredicto_mecanico": veredicto,
+            "fecha_validacion": datetime.now(timezone.utc) if veredicto else None,
+        },
+    )

@@ -1,7 +1,7 @@
 import logging
 import os
 import uuid
-from typing import Optional
+from typing import Literal, Optional
 
 from fastapi import (
     APIRouter,
@@ -20,9 +20,11 @@ import services.diagnostico as service
 from database import get_db
 from models.user import Usuario
 from schemas.diagnostico import DiagnosticoCreate, DiagnosticoDetalle
-from services.cnn_service import CNNService
+from schemas.evaluacion import EvaluacionCreate, EvaluacionRead
+from services.cnn_service import AudioDemasiadoCorto, CNNService
 from utils.auth import get_current_user
 from utils.cnn import get_cnn_service
+from utils.limite import limitar_analisis
 
 logger = logging.getLogger(__name__)
 
@@ -39,10 +41,13 @@ ESPECTROGRAMAS_DIR = os.getenv("ESPECTROGRAMAS_DIR", "data/espectrogramas")
 async def analizar(
     audio: UploadFile = File(...),
     id_modelo: int = Form(...),
-    anio: int = Form(...),
-    kilometraje: Optional[int] = Form(None),
+    # Mismos rangos que el schema y la BD: se validan ANTES de correr el CNN.
+    anio: int = Form(..., ge=1980, le=2100),
+    kilometraje: Optional[int] = Form(None, ge=0),
     notas: Optional[str] = Form(None),
-    current: Usuario = Depends(get_current_user),
+    notaba_sintomas: Optional[Literal["si", "no"]] = Form(None),
+    # Autentica y aplica el límite de análisis por usuario (429 si se excede).
+    current: Usuario = Depends(limitar_analisis),
     cnn: CNNService = Depends(get_cnn_service),
     db: Session = Depends(get_db),
 ):
@@ -80,6 +85,8 @@ async def analizar(
 
     try:
         resultado = cnn.predecir(audio_bytes, cilindraje)
+    except AudioDemasiadoCorto as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
     except Exception:
         logger.exception("Falló la inferencia del CNN")
         raise HTTPException(
@@ -110,6 +117,7 @@ async def analizar(
         espectrograma_ref=f"espectrogramas/{nombre_png}",
         resultado=resultado["clase"],
         confianza=resultado["confianza"],
+        notaba_sintomas=notaba_sintomas,
     )
     creado = service.crear(db, datos)
     return service.obtener_detalle(db, creado.id_diagnostico)
@@ -139,3 +147,23 @@ def obtener(
             detail="No puedes ver diagnósticos de otro usuario",
         )
     return detalle
+
+
+# Encuesta de confianza (OE3) que responde el dueño del diagnóstico. 409 si ya existe.
+@router.post(
+    "/{id_diagnostico}/evaluacion",
+    response_model=EvaluacionRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def evaluar(
+    id_diagnostico: int,
+    datos: EvaluacionCreate,
+    current: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if service.obtener(db, id_diagnostico).id_usuario != current.id_usuario:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No puedes evaluar diagnósticos de otro usuario",
+        )
+    return service.evaluar(db, id_diagnostico, datos)

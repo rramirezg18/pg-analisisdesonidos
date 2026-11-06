@@ -25,6 +25,8 @@ const MOTO_VACIA: DatosMoto = {
   anio: '',
   kilometraje: '',
   notas: '',
+  notaba_sintomas: '',
+  confianza_antes: '',
 }
 
 const TITULOS = ['Nuevo diagnóstico', 'Nuevo diagnóstico', 'Resultado']
@@ -116,7 +118,12 @@ export function NuevoDiagnosticoPage() {
           />
         )}
         {paso === 2 && diagnostico && (
-          <PasoResultado diagnostico={diagnostico} cnn={cnn} onOtro={reiniciar} />
+          <PasoResultado
+            diagnostico={diagnostico}
+            cnn={cnn}
+            confianzaAntes={datosMoto.confianza_antes}
+            onOtro={reiniciar}
+          />
         )}
       </Box>
     </MobileShell>

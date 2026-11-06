@@ -1,3 +1,4 @@
+import BarChartIcon from '@mui/icons-material/BarChart'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import GitHubIcon from '@mui/icons-material/GitHub'
 import GoogleIcon from '@mui/icons-material/Google'
@@ -64,6 +65,20 @@ export function PerfilPage() {
           />
         </Stack>
       </Card>
+
+      {usuario?.es_admin && (
+        <Card variant="outlined" sx={{ mt: 2, bgcolor: 'background.paper' }}>
+          <CardActionArea onClick={() => navigate('/admin')} sx={{ p: 2 }}>
+            <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+              <BarChartIcon color="primary" />
+              <Typography variant="body1" sx={{ flex: 1, fontWeight: 600 }}>
+                Panel de investigación
+              </Typography>
+              <ChevronRightIcon sx={{ color: 'text.secondary' }} />
+            </Stack>
+          </CardActionArea>
+        </Card>
+      )}
 
       <Card variant="outlined" sx={{ mt: 2, bgcolor: 'background.paper' }}>
         <CardActionArea onClick={() => navigate('/acerca-de')} sx={{ p: 2 }}>

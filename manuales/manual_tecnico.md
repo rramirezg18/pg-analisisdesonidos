@@ -287,7 +287,7 @@ Las dependencias se resuelven con el sistema de inyección de FastAPI (`Depends`
 
 Durante el arranque (`lifespan`), el backend carga una sola vez el modelo CNN desde `MODELO_CNN_PATH` y `MODELO_CNN_CONFIG` y lo guarda en `app.state.cnn_service`. Si la carga falla, la aplicación sigue en funcionamiento, registra el error y el endpoint de análisis responde `503`.
 
-La documentación interactiva de la API (Swagger UI) está disponible en `https://<TU_DOMINIO>/api/docs`.
+La documentación interactiva de la API (Swagger UI, ReDoc y `openapi.json`) solo se publica si `HABILITAR_DOCS=true`. En producción queda deshabilitada (responde `404`); en localhost la activa `docker-compose.local.yml` y queda en `http://localhost/api/docs`.
 
 ### 3.3 Middleware y manejo de errores
 
@@ -323,9 +323,6 @@ Las rutas se muestran sin el prefijo `/api`. La columna *Auth* indica si se requ
 | Método | Ruta                     | Auth | Descripción                                        |
 |--------|--------------------------|------|----------------------------------------------------|
 | GET    | `/usuarios/me`           | Sí   | Devuelve el usuario autenticado.                   |
-| GET    | `/usuarios`              | No   | Lista usuarios (paginado con `skip` y `limit`).    |
-| GET    | `/usuarios/{id_usuario}` | No   | Obtiene un usuario por id.                         |
-| POST   | `/usuarios/login-oauth`  | No   | Crea o actualiza un usuario a partir de una identidad OAuth. |
 
 **Catálogo** (`routers/marca.py`, `routers/modelo.py`)
 
@@ -333,10 +330,10 @@ Las rutas se muestran sin el prefijo `/api`. La columna *Auth* indica si se requ
 |--------|-------------------------|------|---------------------------------------------------------------|
 | GET    | `/marcas`               | No   | Lista las marcas.                                             |
 | GET    | `/marcas/{id_marca}`    | No   | Obtiene una marca.                                            |
-| POST   | `/marcas`               | No   | Crea una marca.                                               |
+| POST   | `/marcas`               | Admin | Crea una marca.                                              |
 | GET    | `/modelos`              | No   | Lista los modelos. Con `?id_marca=` filtra por marca.         |
 | GET    | `/modelos/{id_modelo}`  | No   | Obtiene un modelo.                                            |
-| POST   | `/modelos`              | No   | Crea un modelo.                                               |
+| POST   | `/modelos`              | Admin | Crea un modelo.                                              |
 
 **Modelos CNN** (`routers/modelo_cnn.py`)
 
@@ -345,8 +342,10 @@ Las rutas se muestran sin el prefijo `/api`. La columna *Auth* indica si se requ
 | GET    | `/modelos-cnn`                        | No   | Lista las versiones registradas del CNN.             |
 | GET    | `/modelos-cnn/activo`                 | No   | Devuelve la versión activa.                          |
 | GET    | `/modelos-cnn/{id_modelo_cnn}`        | No   | Obtiene una versión.                                 |
-| POST   | `/modelos-cnn`                        | No   | Registra una versión.                                |
-| PATCH  | `/modelos-cnn/{id_modelo_cnn}/activar`| No   | Activa una versión y desactiva la anterior.          |
+| POST   | `/modelos-cnn`                        | Admin | Registra una versión.                               |
+| PATCH  | `/modelos-cnn/{id_modelo_cnn}/activar`| Admin | Activa una versión y desactiva la anterior.         |
+
+*Admin*: exige el encabezado `X-Admin-Key` con el valor de `ADMIN_API_KEY` (`401` sin clave, `403` si es incorrecta). Si `ADMIN_API_KEY` está vacía, estas operaciones quedan deshabilitadas; el catálogo se carga con `seed.py`.
 
 **Diagnósticos** (`routers/diagnostico.py`)
 
@@ -369,7 +368,7 @@ Cuerpo `multipart/form-data`:
 
 | Campo         | Tipo    | Obligatorio | Validación                                         |
 |---------------|---------|-------------|----------------------------------------------------|
-| `audio`       | archivo | Sí          | Extensión `wav`, `mp3`, `m4a`, `ogg` o `webm`; máximo 20 MB; no vacío. |
+| `audio`       | archivo | Sí          | Extensión `wav`, `mp3`, `m4a`, `ogg` o `webm`; máximo 20 MB; no vacío; duración mínima de 4 s. |
 | `id_modelo`   | entero  | Sí          | Debe existir en la tabla `modelo`.                 |
 | `anio`        | entero  | Sí          | Entre 1980 y 2100.                                 |
 | `kilometraje` | entero  | No          | Mayor o igual a 0.                                 |
@@ -381,9 +380,10 @@ Respuestas de error:
 
 | Código | Causa                                                                   |
 |--------|-------------------------------------------------------------------------|
-| 400    | Formato no soportado, archivo vacío o mayor de 20 MB.                   |
+| 400    | Formato no soportado, archivo vacío, mayor de 20 MB o de menos de 4 s.  |
 | 401    | Token ausente, inválido o expirado.                                     |
 | 404    | El `id_modelo` no existe.                                               |
+| 429    | El usuario superó `ANALISIS_POR_MINUTO` análisis en el último minuto.   |
 | 422    | ffmpeg o librosa no pudieron procesar el audio.                         |
 | 503    | El modelo CNN no se cargó o no hay ninguna versión activa en la BD.     |
 
@@ -416,7 +416,7 @@ Navegador            Frontend             Backend                    Google / Gi
    │                    │                     │ Obtiene perfil (email, sub) ►│
    │                    │                     │ Crea/actualiza el usuario    │
    │                    │                     │ Firma un JWT propio          │
-   │ ◄──── 302 a FRONTEND_URL/auth/callback?token=<JWT> ──                   │
+   │ ◄──── 302 a FRONTEND_URL/auth/callback#token=<JWT> ──                   │
    │──────────────────► │ Guarda el JWT en localStorage y abre la app        │
 ```
 
@@ -504,7 +504,7 @@ Implementado en `services/cnn_service.py`, método `_audio_a_espectrograma`:
 
 1. **Transcodificación.** ffmpeg convierte cualquier formato de entrada a WAV PCM mono de 44,1 kHz. Es necesario porque libsndfile no lee contenedores como WebM, que es el formato que genera `MediaRecorder` en la mayoría de navegadores.
 2. **Carga.** librosa remuestrea a 22 050 Hz y lee como máximo 4 segundos.
-3. **Ajuste de duración.** Si el audio dura menos de 4 s, se rellena con ceros; si dura más, se recorta.
+3. **Ajuste de duración.** Si el audio dura menos de 4 s se rechaza con `AudioDemasiadoCorto` (el endpoint responde `400`), con un margen de 0,1 s para el redondeo de los codificadores; si dura más, se recorta a 4 s.
 4. **Espectrograma de Mel** con `n_fft`, `hop_length`, `n_mels`, `fmin` y `fmax` del archivo de configuración.
 5. **Escala logarítmica** (`power_to_db` con referencia al máximo).
 6. **Normalización min-max** al rango [0, 1].
@@ -532,6 +532,7 @@ Para desplegar un modelo reentrenado:
    ```bash
    curl -X POST https://<TU_DOMINIO>/api/modelos-cnn \
      -H "Content-Type: application/json" \
+     -H "X-Admin-Key: <ADMIN_API_KEY>" \
      -d '{"version":"v2.0","fecha_entrenamiento":"2026-11-01T00:00:00","exactitud_validacion":92.5,"archivo_pesos":"modelo_cnn_v2.keras","descripcion":"Entrenado con datos reales","activo":1}'
    ```
 4. Reinicie el backend para que cargue el nuevo modelo:
@@ -704,6 +705,7 @@ En producción, el `Dockerfile` compila la aplicación con Node 22 (`npm ci` y `
 
 ### 7.3 Gestión de la sesión
 
+- El backend entrega el JWT en el fragmento de la URL (`/auth/callback#token=...`): el navegador nunca envía el fragmento a un servidor, así que no queda en logs ni en el encabezado `Referer`. `AuthCallbackPage` lo lee y lo borra de la barra de direcciones con `history.replaceState`.
 - El JWT se guarda en `localStorage` con la clave `motorscan_token`.
 - Al cargar la aplicación, `AuthContext` valida el token con `GET /usuarios/me`. Si la respuesta falla (token expirado o inválido), lo elimina y el usuario vuelve al login.
 - `loginConGoogle` y `loginConGithub` redirigen el navegador a `/api/auth/<proveedor>/login`.
@@ -733,6 +735,9 @@ Se definen en `backend/.env`, que Docker Compose carga mediante `env_file`. La p
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | No          | `60`                                            | Vigencia del JWT en minutos.                                 |
 | `CORS_ORIGINS`                | Sí          | `http://localhost,http://localhost:5173`        | Orígenes permitidos, separados por coma.                     |
 | `FRONTEND_URL`                | Sí          | `http://localhost`                              | URL a la que el backend redirige tras el login.              |
+| `ADMIN_API_KEY`               | No          | vacía (deshabilitado)                           | Clave del encabezado `X-Admin-Key` para escribir el catálogo. |
+| `HABILITAR_DOCS`              | No          | `false`                                         | Publica Swagger/ReDoc/OpenAPI en `/api/docs`.                |
+| `ANALISIS_POR_MINUTO`         | No          | `10`                                            | Análisis permitidos por usuario y por minuto (luego `429`).  |
 | `GOOGLE_CLIENT_ID`            | Sí*         | —                                               | ID de cliente OAuth de Google.                               |
 | `GOOGLE_CLIENT_SECRET`        | Sí*         | —                                               | Secreto de cliente OAuth de Google.                          |
 | `GOOGLE_CALLBACK_URL`         | Sí*         | `http://localhost/api/auth/google/callback`     | URL de retorno registrada en Google.                         |
@@ -828,7 +833,7 @@ python seed.py
 uvicorn main:app --reload --port 8001
 ```
 
-La documentación de la API queda disponible en `http://localhost:8001/docs`.
+Para ver la documentación de la API en `http://localhost:8001/docs`, agregue `HABILITAR_DOCS=true` al `.env`.
 
 ### 9.3 Frontend
 
@@ -851,6 +856,16 @@ Otros comandos:
 | `npm run preview` | Sirve localmente la versión compilada.               |
 
 > **NOTA:** `reverse/nginx.conf` está configurado para HTTPS y requiere los certificados de Let's Encrypt. Por eso, `docker compose up` no funciona en una máquina de desarrollo sin certificados; use el procedimiento de esta sección.
+
+### 9.4 Ejecución completa en localhost con Docker
+
+Levanta los tres contenedores (backend, frontend y proxy) en `http://localhost`, sin HTTPS ni certificados:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+```
+
+`docker-compose.local.yml` reemplaza la configuración del proxy por `reverse/nginx.local.conf` (solo HTTP, puerto 80) y activa `HABILITAR_DOCS`. En `backend/.env` las URL deben apuntar a localhost (`FRONTEND_URL=http://localhost`, `CORS_ORIGINS=http://localhost`, `GITHUB_CALLBACK_URL=http://localhost/api/auth/github/callback`, `GOOGLE_CALLBACK_URL=http://localhost/api/auth/google/callback`), y esas URL de callback deben estar registradas en las apps OAuth.
 
 <div style="page-break-after: always;"></div>
 
@@ -1083,22 +1098,18 @@ Si la IP pública cambia (por ejemplo, si no se usa IP elástica), actualice el 
 | Gestión de secretos                       | Variables de entorno en `backend/.env`, excluido de Git.               |
 | Superficie expuesta mínima                | Solo el proxy publica puertos; backend y frontend son internos.        |
 
-### 12.2 Riesgos conocidos
+### 12.2 Controles de seguridad
 
-> **PRECAUCIÓN:** los siguientes endpoints no requieren autenticación y están expuestos públicamente a través del proxy. Se recomienda protegerlos (por ejemplo, con `Depends(get_current_user)` y un rol de administrador) o eliminarlos antes de un uso en producción con usuarios reales.
+| Riesgo                                                     | Control aplicado                                                                                     |
+|------------------------------------------------------------|------------------------------------------------------------------------------------------------------|
+| Alteración del catálogo y de la versión activa del CNN     | `POST /marcas`, `POST /modelos`, `POST /modelos-cnn` y `PATCH .../activar` exigen `X-Admin-Key`; sin `ADMIN_API_KEY` quedan deshabilitados. |
+| Exposición de datos de otros usuarios                      | Solo existe `GET /usuarios/me`; los diagnósticos ajenos responden `403`.                              |
+| Robo del JWT por XSS                                       | Cabecera `Content-Security-Policy` que solo permite scripts propios, más `X-Frame-Options`, `nosniff` y `Referrer-Policy` (`frontend/security-headers.conf`). El token vence a los 60 min. |
+| JWT visible en logs o en el `Referer`                      | El token viaja en el fragmento `#token=` y se borra de la URL al leerlo.                             |
+| Documentación de la API expuesta                           | Swagger/ReDoc/OpenAPI solo con `HABILITAR_DOCS=true` (deshabilitado en producción).                   |
+| Saturación de CPU con el endpoint de análisis              | Límite de `ANALISIS_POR_MINUTO` análisis por usuario (responde `429` con `Retry-After`).               |
 
-| Endpoint                                   | Riesgo                                                             |
-|--------------------------------------------|--------------------------------------------------------------------|
-| `GET /usuarios`, `GET /usuarios/{id}`      | Exponen los correos y nombres de todos los usuarios registrados.   |
-| `POST /usuarios/login-oauth`               | Permite crear o modificar usuarios sin pasar por el proveedor OAuth. |
-| `POST /marcas`, `POST /modelos`            | Permiten alterar el catálogo.                                      |
-| `POST /modelos-cnn`, `PATCH /modelos-cnn/{id}/activar` | Permiten cambiar la versión activa del modelo registrada en la BD. |
-
-Otras consideraciones:
-
-- El JWT se entrega al frontend como parámetro de la URL de `/auth/callback` y se guarda en `localStorage`. Es vulnerable a robo si existiera una falla XSS en el frontend.
-- La documentación de Swagger (`/api/docs`) está expuesta públicamente.
-- No hay limitación de frecuencia de peticiones (*rate limiting*) en el endpoint de análisis, que es costoso en CPU.
+Riesgo residual: el JWT sigue en `localStorage`. Moverlo a una cookie `httpOnly` exigiría protección CSRF y queda como mejora futura. El límite de análisis vive en memoria del proceso; si se ejecutaran varios *workers* de uvicorn, habría que compartirlo (por ejemplo, con Redis).
 
 <div style="page-break-after: always;"></div>
 
@@ -1135,11 +1146,9 @@ Otras consideraciones:
 | Análisis limitado a 4 segundos | Solo se usan los primeros 4 s del audio. | Analizar varias ventanas y combinar los resultados. |
 | Clasificación binaria | No identifica el tipo de falla. | Ampliar el modelo a clasificación multiclase. |
 | SQLite | Adecuada para una sola instancia, con concurrencia de escritura limitada. | Migrar a PostgreSQL si se requiere escalar horizontalmente. |
-| Endpoints administrativos sin protección | Ver la sección 12.2. | Agregar autenticación y roles. |
-| Sin pruebas automatizadas ni CI/CD | El despliegue es manual. | Agregar pruebas con pytest y un flujo de GitHub Actions. |
-| Sin `.dockerignore` | Una carpeta `venv` o `node_modules` local se copia al contexto de construcción. | Agregar `.dockerignore` en `backend/` y `frontend/`. |
+| Administración con una clave compartida | Las escrituras del catálogo se protegen con `X-Admin-Key` (sección 12.2), sin usuarios administradores ni roles. | Agregar un rol de administrador a los usuarios. |
+| Sin CI/CD | Las pruebas de `backend/tests` (pytest) se ejecutan a mano y el despliegue es manual. | Ejecutarlas en un flujo de GitHub Actions en cada *push*. |
 | Código sin uso en el frontend | `src/utils/melSpectrogram.ts` (cálculo del espectrograma en el navegador) no se utiliza desde que el cálculo se trasladó al backend, y sus parámetros difieren de `model_config.json`. | Eliminarlo o alinearlo con la configuración del modelo. |
-| Configuración de desarrollo con Docker | `reverse/nginx.conf` exige certificados, por lo que Compose no funciona en local. | Crear un archivo de Compose separado para desarrollo. |
 
 <div style="page-break-after: always;"></div>
 

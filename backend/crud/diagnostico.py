@@ -1,8 +1,10 @@
 from sqlalchemy.orm import Session
 
 from models.diagnostico import Diagnostico
+from models.evaluacion import EvaluacionUsuario
 from models.marca import Marca
 from models.modelo import Modelo
+from models.user import Usuario
 
 
 def get(db: Session, id_diagnostico: int) -> Diagnostico | None:
@@ -34,6 +36,40 @@ def get_detalle_by_usuario(
         _query_detalle(db)
         .filter(Diagnostico.id_usuario == id_usuario)
         .order_by(Diagnostico.fecha_diagnostico.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+# Listado del admin: tuplas (Diagnostico, marca, modelo, cc, email, id_evaluacion).
+# estado: "pendientes" (sin veredicto), "validados" o None (todos).
+def get_detalle_admin(
+    db: Session, estado: str | None = None, skip: int = 0, limit: int = 100
+):
+    q = (
+        db.query(
+            Diagnostico,
+            Marca.nombre,
+            Modelo.nombre,
+            Modelo.cilindraje,
+            Usuario.email,
+            EvaluacionUsuario.id_evaluacion,
+        )
+        .join(Modelo, Diagnostico.id_modelo == Modelo.id_modelo)
+        .join(Marca, Modelo.id_marca == Marca.id_marca)
+        .join(Usuario, Diagnostico.id_usuario == Usuario.id_usuario)
+        .outerjoin(
+            EvaluacionUsuario,
+            EvaluacionUsuario.id_diagnostico == Diagnostico.id_diagnostico,
+        )
+    )
+    if estado == "pendientes":
+        q = q.filter(Diagnostico.veredicto_mecanico.is_(None))
+    elif estado == "validados":
+        q = q.filter(Diagnostico.veredicto_mecanico.is_not(None))
+    return (
+        q.order_by(Diagnostico.fecha_diagnostico.desc())
         .offset(skip)
         .limit(limit)
         .all()

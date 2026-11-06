@@ -2,22 +2,104 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import HistoryIcon from '@mui/icons-material/History'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import Divider from '@mui/material/Divider'
 import LinearProgress from '@mui/material/LinearProgress'
 import Stack from '@mui/material/Stack'
+import ToggleButton from '@mui/material/ToggleButton'
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Typography from '@mui/material/Typography'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import { urlEspectrograma } from '../../api/diagnostico'
-import type { Diagnostico, ModeloCNN } from '../../types'
+import { enviarEvaluacion, urlEspectrograma } from '../../api/diagnostico'
+import { useAuth } from '../../auth/AuthContext'
+import { EscalaConfianza } from '../../components/EscalaConfianza'
+import type { Diagnostico, EvaluacionNueva, ModeloCNN } from '../../types'
 
 interface Props {
   diagnostico: Diagnostico
   cnn: ModeloCNN | null
+  confianzaAntes: number | ''
   onOtro: () => void
+}
+
+// Encuesta de confianza (OE3). La confianza "antes" ya se preguntó en el paso 1.
+function Encuesta({ idDiagnostico, confianzaAntes }: { idDiagnostico: number; confianzaAntes: number }) {
+  const { token } = useAuth()
+  const [despues, setDespues] = useState<number | ''>('')
+  const [ayudo, setAyudo] = useState<EvaluacionNueva['ayudo_decidir'] | ''>('')
+  const [estado, setEstado] = useState<'editando' | 'enviando' | 'enviada' | 'error'>('editando')
+
+  async function enviar() {
+    if (despues === '' || ayudo === '') return
+    setEstado('enviando')
+    try {
+      await enviarEvaluacion(
+        idDiagnostico,
+        { confianza_antes: confianzaAntes, confianza_despues: despues, ayudo_decidir: ayudo },
+        token,
+      )
+      setEstado('enviada')
+    } catch {
+      setEstado('error')
+    }
+  }
+
+  if (estado === 'enviada') {
+    return (
+      <Alert severity="success" sx={{ mt: 2 }}>
+        ¡Gracias por tu opinión!
+      </Alert>
+    )
+  }
+
+  return (
+    <Card variant="outlined" sx={{ p: 2, mt: 2, bgcolor: 'background.paper' }}>
+      <Typography variant="overline" color="text.secondary">
+        Tu opinión
+      </Typography>
+      <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5, mb: 1 }}>
+        Con el respaldo de este diagnóstico, ¿qué tanta confianza tiene para
+        autorizar una reparación?
+      </Typography>
+      <EscalaConfianza valor={despues} onCambio={setDespues} />
+
+      <Typography variant="body2" sx={{ fontWeight: 600, mt: 2, mb: 1 }}>
+        ¿El resultado le ayudó a decidir?
+      </Typography>
+      <ToggleButtonGroup
+        exclusive
+        fullWidth
+        size="small"
+        color="primary"
+        value={ayudo}
+        onChange={(_, v: EvaluacionNueva['ayudo_decidir'] | null) => v && setAyudo(v)}
+      >
+        <ToggleButton value="si" sx={{ textTransform: 'none' }}>Sí</ToggleButton>
+        <ToggleButton value="parcial" sx={{ textTransform: 'none' }}>Más o menos</ToggleButton>
+        <ToggleButton value="no" sx={{ textTransform: 'none' }}>No</ToggleButton>
+      </ToggleButtonGroup>
+
+      {estado === 'error' && (
+        <Alert severity="error" sx={{ mt: 2 }}>
+          No se pudo enviar. Intenta de nuevo.
+        </Alert>
+      )}
+      <Button
+        fullWidth
+        variant="contained"
+        disabled={despues === '' || ayudo === '' || estado === 'enviando'}
+        onClick={enviar}
+        sx={{ mt: 2 }}
+      >
+        Enviar opinión
+      </Button>
+    </Card>
+  )
 }
 
 function Fila({ etiqueta, valor }: { etiqueta: string; valor: string }) {
@@ -33,7 +115,7 @@ function Fila({ etiqueta, valor }: { etiqueta: string; valor: string }) {
   )
 }
 
-export function PasoResultado({ diagnostico, cnn, onOtro }: Props) {
+export function PasoResultado({ diagnostico, cnn, confianzaAntes, onOtro }: Props) {
   const navigate = useNavigate()
   const esAnomalia = diagnostico.resultado === 'anomalia'
   const color = esAnomalia ? 'warning' : 'success'
@@ -85,6 +167,14 @@ export function PasoResultado({ diagnostico, cnn, onOtro }: Props) {
           sx={{ height: 8, borderRadius: 4 }}
         />
       </Card>
+
+      {/* Justo bajo el resultado para que el usuario la vea sin hacer scroll. */}
+      {confianzaAntes !== '' && (
+        <Encuesta
+          idDiagnostico={diagnostico.id_diagnostico}
+          confianzaAntes={confianzaAntes}
+        />
+      )}
 
       {/* Espectrograma de Mel: la entrada del modelo CNN (imagen del servidor) */}
       <Typography variant="overline" color="text.secondary" sx={{ mt: 2, display: 'block' }}>

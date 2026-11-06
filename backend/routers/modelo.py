@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from database import get_db
+from utils.auth import requerir_admin
 from schemas.modelo import ModeloCreate, ModeloRead
 import services.modelo as service
 
@@ -25,6 +26,12 @@ def obtener(id_modelo: int, db: Session = Depends(get_db)):
     return service.obtener(db, id_modelo)
 
 
-@router.post("", response_model=ModeloRead, status_code=status.HTTP_201_CREATED)
+# Escritura del catálogo: solo con la clave de administración (X-Admin-Key).
+@router.post(
+    "",
+    response_model=ModeloRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(requerir_admin)],
+)
 def crear(datos: ModeloCreate, db: Session = Depends(get_db)):
     return service.crear(db, datos)

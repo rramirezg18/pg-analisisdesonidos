@@ -23,3 +23,8 @@ class UsuarioRead(UsuarioBase):
     id_usuario: int
     fecha_registro: datetime
     ultimo_acceso: Optional[datetime] = None
+
+
+# Respuesta de /usuarios/me: indica además si el usuario es administrador.
+class UsuarioMe(UsuarioRead):
+    es_admin: bool

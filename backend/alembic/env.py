@@ -15,6 +15,7 @@ from models.marca import Marca
 from models.modelo import Modelo
 from models.modelo_cnn import ModeloCNN
 from models.diagnostico import Diagnostico
+from models.evaluacion import EvaluacionUsuario
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

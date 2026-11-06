@@ -14,6 +14,8 @@ class DiagnosticoCreateIn(BaseModel):
     espectrograma_ref: str = Field(..., min_length=1)
     resultado: Literal["normal", "anomalia"]
     confianza: float = Field(..., ge=0, le=100)
+    # ¿El usuario ya notaba algo raro en la moto? (se pregunta antes del resultado)
+    notaba_sintomas: Optional[Literal["si", "no"]] = None
 
 
 # DTO interno completo (con el id_usuario ya resuelto) que recibe el service.
@@ -35,6 +37,19 @@ class DiagnosticoDetalle(DiagnosticoRead):
     marca: str
     modelo: str
     cilindraje: int
+
+
+# Vista del admin: incluye el veredicto del mecánico y quién hizo el diagnóstico.
+class DiagnosticoAdmin(DiagnosticoDetalle):
+    email_usuario: str
+    veredicto_mecanico: Optional[Literal["sano", "leve", "grave"]] = None
+    fecha_validacion: Optional[datetime] = None
+    tiene_evaluacion: bool
+
+
+# Lo que registra el admin tras la revisión del mecánico (null = quitar veredicto).
+class VeredictoUpdate(BaseModel):
+    veredicto_mecanico: Optional[Literal["sano", "leve", "grave"]]
 
 
 # Resultado que devuelve la inferencia del CNN (uso interno del servicio).
