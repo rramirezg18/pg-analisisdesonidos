@@ -229,7 +229,7 @@ export function PasoAudio({ resumen, datos, onEditar, onAnalizado }: Props) {
                 startIcon={<FiberManualRecordIcon />}
                 onClick={iniciarGrabacion}
               >
-                {audio ? 'Grabar de nuevo' : 'Grabar audio'}
+                {audio ? 'Grabar de nuevo' : 'Grabar sonido'}
               </Button>
               <Button
                 fullWidth

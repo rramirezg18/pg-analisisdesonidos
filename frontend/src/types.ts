@@ -41,9 +41,6 @@ export interface DatosMoto {
   anio: number | ''
   kilometraje: number | ''
   notas: string
-  // Preguntas previas al resultado (datos para la tesis, OE2 y OE3).
-  notaba_sintomas: 'si' | 'no' | ''
-  confianza_antes: number | ''
 }
 
 // Nombres resueltos de la moto, para mostrar en los pasos 2 y 3.
@@ -80,13 +77,6 @@ export interface DiagnosticoAdmin extends Diagnostico {
   veredicto_mecanico: Veredicto | null
   fecha_validacion: string | null
   tiene_evaluacion: boolean
-}
-
-// Encuesta del usuario al ver el resultado (escala 1..5).
-export interface EvaluacionNueva {
-  confianza_antes: number
-  confianza_despues: number
-  ayudo_decidir: 'si' | 'parcial' | 'no'
 }
 
 // ---- Panel de investigación (GET /admin/estadisticas) ----

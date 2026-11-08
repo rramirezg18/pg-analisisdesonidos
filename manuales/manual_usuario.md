@@ -319,7 +319,7 @@ Puede obtener el audio de dos formas: grabándolo desde la aplicación (opción 
 
 1. Encienda la motocicleta y déjela en ralentí unos segundos, hasta que el sonido sea estable.
 2. Acerque el teléfono al motor, a unos 20–30 cm, sin tocar ninguna pieza caliente.
-3. Pulse **Grabar audio**.
+3. Pulse **Grabar sonido**.
 4. Si el navegador pregunta si desea permitir el uso del micrófono, pulse **Permitir**.
 5. El sistema muestra un contador de tiempo y el mensaje "Grabando…". Mantenga el teléfono quieto y no acelere.
 6. Cuando el contador supere los 5 segundos, pulse **Detener**.
@@ -473,7 +473,7 @@ Los datos de la cuenta se obtienen de Google y no pueden modificarse desde Motor
 
 | Mensaje | Causa | Solución |
 |---------|-------|----------|
-| "No se pudo acceder al micrófono. Revisa los permisos del navegador." | El navegador no tiene permiso para usar el micrófono, o el dispositivo no tiene micrófono. | Habilite el permiso del micrófono en la configuración del sitio y vuelva a pulsar **Grabar audio**. Como alternativa, use **Subir archivo**. |
+| "No se pudo acceder al micrófono. Revisa los permisos del navegador." | El navegador no tiene permiso para usar el micrófono, o el dispositivo no tiene micrófono. | Habilite el permiso del micrófono en la configuración del sitio y vuelva a pulsar **Grabar sonido**. Como alternativa, use **Subir archivo**. |
 | "Formato no soportado. Usa: m4a, mp3, ogg, wav, webm" | El archivo subido no tiene una extensión admitida. | Convierta el audio a uno de los formatos indicados o grábelo desde la aplicación. |
 | "Archivo de audio vacío" | El archivo no contiene datos. | Verifique el archivo o realice una nueva grabación. |
 | "Archivo demasiado grande (máx. 20 MB)" | El archivo supera el tamaño permitido. | Recorte el audio a unos pocos segundos o use un formato comprimido (MP3, M4A). |
@@ -558,7 +558,7 @@ Al reportar un problema, indique:
 2. En **Inicio**, pulse **Empezar**.
 3. Seleccione **Marca** y **Modelo**, escriba el **Año** y pulse **Continuar**.
 4. Encienda la moto en un lugar ventilado y espere a que el ralentí se estabilice.
-5. Pulse **Grabar audio**, grabe al menos 5 segundos sin acelerar y pulse **Detener**.
+5. Pulse **Grabar sonido**, grabe al menos 5 segundos sin acelerar y pulse **Detener**.
 6. Pulse **Analizar audio**.
 7. Revise el resultado y la confianza. Si el resultado es "Anomalía detectada", consulte a un mecánico.
 

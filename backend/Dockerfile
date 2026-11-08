@@ -20,4 +20,6 @@ RUN mkdir -p /app/data
 
 EXPOSE 8001
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]
+# Aplica las migraciones pendientes antes de arrancar (usa DATABASE_URL del .env).
+# Si una migración falla, el contenedor no levanta y el error queda en los logs.
+CMD ["sh", "-c", "alembic upgrade head && exec uvicorn main:app --host 0.0.0.0 --port 8001"]
