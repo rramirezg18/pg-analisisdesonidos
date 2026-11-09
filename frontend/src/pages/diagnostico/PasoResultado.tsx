@@ -2,22 +2,88 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import HistoryIcon from '@mui/icons-material/History'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
 import Divider from '@mui/material/Divider'
 import LinearProgress from '@mui/material/LinearProgress'
 import Stack from '@mui/material/Stack'
+import ToggleButton from '@mui/material/ToggleButton'
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Typography from '@mui/material/Typography'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import { urlEspectrograma } from '../../api/diagnostico'
-import type { Diagnostico, ModeloCNN } from '../../types'
+import { registrarVeredictoMecanico, urlEspectrograma } from '../../api/diagnostico'
+import { useAuth } from '../../auth/AuthContext'
+import type { Diagnostico, ModeloCNN, Veredicto } from '../../types'
 
 interface Props {
   diagnostico: Diagnostico
   cnn: ModeloCNN | null
   onOtro: () => void
+}
+
+// El mecánico registra lo que encontró al revisar la moto. Se guarda al
+// elegir una opción y se puede cambiar; sirve para medir si el sistema acierta.
+function VeredictoMecanico({ idDiagnostico }: { idDiagnostico: number }) {
+  const { token } = useAuth()
+  const [veredicto, setVeredicto] = useState<Veredicto | null>(null)
+  const [estado, setEstado] = useState<'inicial' | 'guardando' | 'guardado' | 'error'>('inicial')
+
+  async function guardar(v: Veredicto) {
+    const anterior = veredicto
+    setVeredicto(v)
+    setEstado('guardando')
+    try {
+      await registrarVeredictoMecanico(idDiagnostico, v, token)
+      setEstado('guardado')
+    } catch {
+      setVeredicto(anterior)
+      setEstado('error')
+    }
+  }
+
+  return (
+    <Card variant="outlined" sx={{ p: 2, mt: 2, bgcolor: 'background.paper' }}>
+      <Typography variant="overline" color="text.secondary">
+        Revisión del mecánico
+      </Typography>
+      <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5, mb: 1 }}>
+        Al revisar la moto, ¿qué encontró?
+      </Typography>
+      <ToggleButtonGroup
+        exclusive
+        fullWidth
+        size="small"
+        value={veredicto}
+        disabled={estado === 'guardando'}
+        onChange={(_, v: Veredicto | null) => v && guardar(v)}
+      >
+        <ToggleButton value="sano" color="success" sx={{ textTransform: 'none' }}>
+          Sin falla
+        </ToggleButton>
+        <ToggleButton value="leve" color="warning" sx={{ textTransform: 'none' }}>
+          Falla leve
+        </ToggleButton>
+        <ToggleButton value="grave" color="error" sx={{ textTransform: 'none' }}>
+          Falla grave
+        </ToggleButton>
+      </ToggleButtonGroup>
+
+      {estado === 'guardado' && (
+        <Alert severity="success" sx={{ mt: 1.5 }}>
+          Revisión guardada. Puede cambiarla si se equivocó.
+        </Alert>
+      )}
+      {estado === 'error' && (
+        <Alert severity="error" sx={{ mt: 1.5 }}>
+          No se pudo guardar. Intente de nuevo.
+        </Alert>
+      )}
+    </Card>
+  )
 }
 
 function Fila({ etiqueta, valor }: { etiqueta: string; valor: string }) {
@@ -85,6 +151,8 @@ export function PasoResultado({ diagnostico, cnn, onOtro }: Props) {
           sx={{ height: 8, borderRadius: 4 }}
         />
       </Card>
+
+      <VeredictoMecanico idDiagnostico={diagnostico.id_diagnostico} />
 
       {/* Espectrograma de Mel: la entrada del modelo CNN (imagen del servidor) */}
       <Typography variant="overline" color="text.secondary" sx={{ mt: 2, display: 'block' }}>

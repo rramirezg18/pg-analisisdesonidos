@@ -1,5 +1,5 @@
 import { API_URL } from '../config'
-import type { DatosMoto, Diagnostico } from '../types'
+import type { DatosMoto, Diagnostico, Veredicto } from '../types'
 import { ApiError, apiFetch } from './client'
 
 // URL pública de la imagen del espectrograma (servida estáticamente por el backend).
@@ -51,4 +51,17 @@ export function listarMisDiagnosticos(token: string | null) {
 
 export function obtenerDiagnostico(id: number, token: string | null) {
   return apiFetch<Diagnostico>(`/diagnosticos/${id}`, {}, token)
+}
+
+// Lo que encontró el mecánico al revisar la moto (null = quitarlo).
+export function registrarVeredictoMecanico(
+  id: number,
+  veredicto: Veredicto | null,
+  token: string | null,
+) {
+  return apiFetch<void>(
+    `/diagnosticos/${id}/veredicto`,
+    { method: 'PATCH', body: JSON.stringify({ veredicto_mecanico: veredicto }) },
+    token,
+  )
 }

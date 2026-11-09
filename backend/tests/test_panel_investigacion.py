@@ -126,6 +126,27 @@ def test_cp14_veredicto_invalido(client, headers_admin, escenario):
     assert r.status_code == 422
 
 
+
+@pytest.mark.cu("CU-08")
+def test_cp14b_veredicto_desde_resultado(client, headers_a, headers_b, headers_admin, escenario):
+    """CP-14b: el dueño registra el veredicto desde el resultado; otro usuario recibe 403."""
+    id_diag = escenario["ids"][0]
+    url = f"/diagnosticos/{id_diag}/veredicto"
+
+    r = client.patch(url, json={"veredicto_mecanico": "leve"}, headers=headers_b)
+    assert r.status_code == 403
+
+    r = client.patch(url, json={"veredicto_mecanico": "leve"}, headers=headers_a)
+    assert r.status_code == 204
+    casos = client.get("/admin/diagnosticos?limit=500", headers=headers_admin).json()
+    caso = next(d for d in casos if d["id_diagnostico"] == id_diag)
+    assert caso["veredicto_mecanico"] == "leve" and caso["fecha_validacion"] is not None
+
+    # Deja el escenario como estaba para las pruebas de estadísticas.
+    original = client.patch(url, json={"veredicto_mecanico": CASOS[0][0]}, headers=headers_a)
+    assert original.status_code == 204
+
+
 # ---------- Encuesta del usuario ----------
 
 @pytest.mark.cu("CU-08")

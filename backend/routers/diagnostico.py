@@ -19,7 +19,7 @@ import crud.modelo_cnn as crud_cnn
 import services.diagnostico as service
 from database import get_db
 from models.user import Usuario
-from schemas.diagnostico import DiagnosticoCreate, DiagnosticoDetalle
+from schemas.diagnostico import DiagnosticoCreate, DiagnosticoDetalle, VeredictoUpdate
 from schemas.evaluacion import EvaluacionCreate, EvaluacionRead
 from services.cnn_service import AudioDemasiadoCorto, CNNService
 from utils.auth import get_current_user
@@ -167,3 +167,20 @@ def evaluar(
             detail="No puedes evaluar diagnósticos de otro usuario",
         )
     return service.evaluar(db, id_diagnostico, datos)
+
+
+# El mecánico que hizo el diagnóstico registra lo que encontró al revisar la moto.
+# Mismo dato que edita el admin en /admin/diagnosticos/{id}/veredicto.
+@router.patch("/{id_diagnostico}/veredicto", status_code=status.HTTP_204_NO_CONTENT)
+def registrar_veredicto(
+    id_diagnostico: int,
+    datos: VeredictoUpdate,
+    current: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if service.obtener(db, id_diagnostico).id_usuario != current.id_usuario:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No puedes validar diagnósticos de otro usuario",
+        )
+    service.registrar_veredicto(db, id_diagnostico, datos.veredicto_mecanico)
