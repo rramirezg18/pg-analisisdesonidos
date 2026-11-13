@@ -1,0 +1,17 @@
+# Configuración NO sensible del backend (lo sensible va en backend-secret).
+# Dominio: motorscan.duckdns.org (DuckDNS -> 35.188.164.62). Si cambia, actualizar aquí e ingress.yaml.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+data:
+  # DATABASE_URL se arma en backend-deployment.yaml con la contraseña del Secret.
+  MEDIA_DIR: "/app/data"
+  JWT_ALGORITHM: "HS256"
+  ACCESS_TOKEN_EXPIRE_MINUTES: "60"
+  HABILITAR_DOCS: "false"
+  ANALISIS_POR_MINUTO: "10"
+  FRONTEND_URL: "https://motorscan.duckdns.org"
+  CORS_ORIGINS: "https://motorscan.duckdns.org"
+  GITHUB_CALLBACK_URL: "https://motorscan.duckdns.org/api/auth/github/callback"
+  GOOGLE_CALLBACK_URL: "https://motorscan.duckdns.org/api/auth/google/callback"

@@ -1,0 +1,15 @@
+# Service interno (ClusterIP): solo lo alcanza el nginx del frontend, no Internet.
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  labels:
+    app.kubernetes.io/name: motorscan-backend
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: motorscan-backend
+  ports:
+    - name: http
+      port: 8001
+      targetPort: http

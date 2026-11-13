@@ -35,5 +35,6 @@ class ModeloCNN(Base):
             "activo",
             unique=True,
             sqlite_where=text("activo = 1"),
+            postgresql_where=text("activo = 1"),
         ),
     )

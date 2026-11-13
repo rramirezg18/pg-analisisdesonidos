@@ -1,0 +1,15 @@
+# Volumen persistente para los PNG de espectrogramas (la BD está en Postgres).
+# Sobrevive a reinicios, borrado de pods y nuevas versiones de la imagen.
+# Sin storageClassName -> usa la clase por defecto del clúster (en k3s: local-path).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backend-media
+  labels:
+    app.kubernetes.io/name: motorscan-backend
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi

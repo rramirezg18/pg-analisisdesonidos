@@ -1,0 +1,51 @@
+# MotorScan en Kubernetes (k3s). Despliegue:  kubectl apply -k k8s/
+# Escalar:  kubectl scale deployment backend --replicas=3   (o deployment frontend)
+#
+# Cuota del namespace -> presupuesto (requests CPU/RAM | limits CPU/RAM):
+#   backend   50m/256Mi | 500m/768Mi  x2 (escala hasta 3)
+#   postgres  20m/96Mi  | 200m/256Mi  x1
+#   frontend  10m/24Mi  | 100m/64Mi   x2 (escala hasta 3)
+#   Con 3 backend + 3 frontend: 200m/936Mi | 2000m/2752Mi  <= cuota 300m/1Gi | 2/3Gi
+# Todo vive en el namespace del alumno; no se crea el Namespace (ya existe).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: rramirezg18
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: motorscan
+    includeSelectors: false
+
+resources:
+  - backend-configmap.yaml
+  - postgres.yaml
+  - backend-pvc.yaml
+  - backend-deployment.yaml
+  - backend-service.yaml
+  - frontend-deployment.yaml
+  - frontend-service.yaml
+  - issuer.yaml
+  - ingress.yaml
+
+# Secretos (incluye la contraseña de Postgres): se generan desde k8s/backend-secret.env (NO se versiona, ver el .example).
+# El sufijo hash hace que el Deployment se reinicie solo si cambia un secreto.
+secretGenerator:
+  - name: backend-secret
+    envs:
+      - backend-secret.env
+
+# nginx del frontend en K8s: sirve la SPA y hace de proxy /api -> backend.
+configMapGenerator:
+  - name: frontend-nginx
+    files:
+      - default.conf=nginx/default.conf
+
+# Imágenes publicadas por k8s/build-push.sh. Cambia el tag en cada versión nueva.
+images:
+  - name: motorscan-backend
+    newName: ghcr.io/rramirezg18/motorscan-backend
+    newTag: "1.0.0"
+  - name: motorscan-frontend
+    newName: ghcr.io/rramirezg18/motorscan-frontend
+    newTag: "1.0.0"

@@ -1,0 +1,10 @@
+# OPCIONAL: autoescalado automático (HPA). Se aplica aparte:
+#   kubectl apply -k k8s/autoescalado/
+# Mientras haya HPA, el HPA decide las réplicas y "kubectl scale" se revierte;
+# para la demo de escalado manual NO lo apliques (o bórralo: kubectl delete -k k8s/autoescalado/).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: rramirezg18
+resources:
+  - backend-hpa.yaml
+  - frontend-hpa.yaml

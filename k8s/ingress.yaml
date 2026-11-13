@@ -1,0 +1,27 @@
+# Entrada pública: https://motorscan.duckdns.org (k3s trae Traefik como Ingress Controller).
+# Todo el tráfico va al frontend; su nginx reenvía /api/ al backend (igual que el
+# reverse proxy de docker compose) y redirige HTTP -> HTTPS.
+# cert-manager emite y renueva solo el certificado (Secret motorscan-tls).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: motorscan
+  annotations:
+    cert-manager.io/issuer: letsencrypt
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - motorscan.duckdns.org
+      secretName: motorscan-tls
+  rules:
+    - host: motorscan.duckdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  name: http

@@ -40,7 +40,7 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id_modelo_cnn'),
     sa.UniqueConstraint('version')
     )
-    op.create_index('idx_modelo_cnn_activo_unico', 'modelo_cnn', ['activo'], unique=True, sqlite_where=sa.text('activo = 1'))
+    op.create_index('idx_modelo_cnn_activo_unico', 'modelo_cnn', ['activo'], unique=True, sqlite_where=sa.text('activo = 1'), postgresql_where=sa.text('activo = 1'))
     op.create_table('usuario',
     sa.Column('id_usuario', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('proveedor_oauth', sa.Text(), nullable=False),
@@ -108,7 +108,7 @@ def downgrade() -> None:
     op.drop_index('idx_modelo_marca', table_name='modelo')
     op.drop_table('modelo')
     op.drop_table('usuario')
-    op.drop_index('idx_modelo_cnn_activo_unico', table_name='modelo_cnn', sqlite_where=sa.text('activo = 1'))
+    op.drop_index('idx_modelo_cnn_activo_unico', table_name='modelo_cnn', sqlite_where=sa.text('activo = 1'), postgresql_where=sa.text('activo = 1'))
     op.drop_table('modelo_cnn')
     op.drop_table('marca')
     # ### end Alembic commands ###

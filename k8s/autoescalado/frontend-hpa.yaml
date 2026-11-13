@@ -1,0 +1,20 @@
+# Autoescalado del frontend: de 2 a 3 réplicas si el CPU promedio pasa del 70 %.
+# (k3s trae metrics-server por defecto.)
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: frontend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: frontend
+  minReplicas: 2
+  maxReplicas: 3
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

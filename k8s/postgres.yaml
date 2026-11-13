@@ -1,0 +1,85 @@
+# PostgreSQL dentro del clúster: guarda usuarios, catálogo y diagnósticos.
+# Con Postgres (y no SQLite) varias réplicas del backend pueden escribir a la vez,
+# que es lo que permite escalar el backend con "kubectl scale".
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  labels:
+    app.kubernetes.io/name: motorscan-postgres
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: motorscan-postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  labels:
+    app.kubernetes.io/name: motorscan-postgres
+    app.kubernetes.io/component: database
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: motorscan-postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: motorscan-postgres
+        app.kubernetes.io/component: database
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: motorscan
+            - name: POSTGRES_DB
+              value: motorscan
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secret
+                  key: POSTGRES_PASSWORD
+            # Subcarpeta: el volumen puede traer lost+found y initdb exige carpeta vacía.
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: pgdata
+              mountPath: /var/lib/postgresql/data
+          resources:
+            requests:
+              cpu: 20m
+              memory: 96Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "motorscan", "-d", "motorscan"]
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "motorscan", "-d", "motorscan"]
+            initialDelaySeconds: 30
+            periodSeconds: 20
+  # Un PVC propio para los datos de Postgres (persisten aunque se borre el pod).
+  volumeClaimTemplates:
+    - metadata:
+        name: pgdata
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 2Gi

@@ -1,0 +1,113 @@
+# Backend FastAPI + modelo CNN (TensorFlow). El .keras va dentro de la imagen.
+#
+# ESCALABLE: es stateless salvo los PNG de espectrogramas.
+#   - BD en PostgreSQL (Service "postgres"), compartida por todas las réplicas.
+#   - Migraciones: cada pod corre "alembic upgrade head" al arrancar; un advisory
+#     lock de Postgres (alembic/env.py) hace que solo uno migre a la vez.
+#   - PNG en el PVC "backend-media" (ReadWriteOnce): la podAffinity pone todas las
+#     réplicas en el mismo nodo para que compartan ese volumen.
+# Escalar:  kubectl scale deployment backend --replicas=3   (máximo 3 por la cuota)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    app.kubernetes.io/name: motorscan-backend
+    app.kubernetes.io/component: api
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: motorscan-backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: motorscan-backend
+        app.kubernetes.io/component: api
+    spec:
+      terminationGracePeriodSeconds: 30
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: motorscan-backend
+      # No arrancar hasta que Postgres acepte conexiones.
+      initContainers:
+        - name: esperar-postgres
+          image: postgres:16-alpine
+          command: ["sh", "-c", "until pg_isready -h postgres -p 5432 -U motorscan; do echo esperando postgres; sleep 2; done"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 50m
+              memory: 32Mi
+      containers:
+        - name: backend
+          image: motorscan-backend
+          imagePullPolicy: IfNotPresent
+          # El CMD de la imagen corre "alembic upgrade head" y luego uvicorn.
+          ports:
+            - name: http
+              containerPort: 8001
+          envFrom:
+            - configMapRef:
+                name: backend-config
+            - secretRef:
+                name: backend-secret
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secret
+                  key: POSTGRES_PASSWORD
+            - name: DATABASE_URL
+              value: "postgresql+psycopg2://motorscan:$(POSTGRES_PASSWORD)@postgres:5432/motorscan"
+          volumeMounts:
+            - name: media
+              mountPath: /app/data
+          # Medido: ~280Mi en reposo, ~500Mi analizando audio.
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 768Mi
+          # Arranque lento (migraciones + carga de TensorFlow): hasta 5 min de margen
+          # antes de que liveness empiece a contar.
+          startupProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+      volumes:
+        - name: media
+          persistentVolumeClaim:
+            claimName: backend-media

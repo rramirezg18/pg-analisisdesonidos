@@ -3,7 +3,7 @@ import sys
 import os
 
 from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from sqlalchemy import pool, text
 
 from alembic import context
 
@@ -82,6 +82,13 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
+        # En PostgreSQL (Kubernetes) varias réplicas del backend arrancan a la vez y
+        # todas corren "alembic upgrade head". El advisory lock hace que solo una
+        # migre; las demás esperan y luego ven que ya no hay nada pendiente.
+        if connection.dialect.name == "postgresql":
+            connection.execute(text("SELECT pg_advisory_lock(7428310)"))
+            connection.commit()
+
         context.configure(
             connection=connection, target_metadata=target_metadata
         )

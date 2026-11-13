@@ -1,0 +1,54 @@
+# Construye las imágenes Docker del backend y frontend y las publica en GHCR,
+# de donde las descarga el clúster k3s (k8s/kustomization.yaml).
+# Se ejecuta al hacer push a main que toque backend/ o frontend/, o a mano
+# desde la pestaña Actions ("Run workflow").
+name: Imagenes Docker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - ".github/workflows/imagenes.yml"
+  workflow_dispatch:
+
+env:
+  # Debe coincidir con newTag en k8s/kustomization.yaml.
+  VERSION: "1.0.0"
+  REGISTRY: ghcr.io/rramirezg18
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  imagen:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        servicio: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.servicio }}
+          platforms: linux/amd64
+          push: true
+          provenance: false
+          tags: |
+            ${{ env.REGISTRY }}/motorscan-${{ matrix.servicio }}:${{ env.VERSION }}
+            ${{ env.REGISTRY }}/motorscan-${{ matrix.servicio }}:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          cache-from: type=gha,scope=${{ matrix.servicio }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.servicio }}
