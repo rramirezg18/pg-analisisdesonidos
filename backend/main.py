@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
@@ -15,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 MODELO_CNN_PATH = os.getenv("MODELO_CNN_PATH", "modelos/modelo_cnn_v1.keras")
 MODELO_CNN_CONFIG = os.getenv("MODELO_CNN_CONFIG", "modelos/model_config.json")
+CALENTAR_MODELO = os.getenv("CALENTAR_MODELO", "true").lower() in ("1", "true", "si")
 
 # Carpeta servida estáticamente (imágenes de espectrogramas). Vive en el volumen data.
 MEDIA_DIR = os.getenv("MEDIA_DIR", "data")
@@ -29,6 +31,16 @@ async def lifespan(app: FastAPI):
     except Exception:
         app.state.cnn_service = None
         logger.exception("No se pudo cargar el modelo CNN")
+
+    # Primer análisis "en vacío" para que el primer usuario no espere la
+    # compilación inicial de librosa/TensorFlow. Si falla, la app sigue igual.
+    if app.state.cnn_service is not None and CALENTAR_MODELO:
+        inicio = time.perf_counter()
+        try:
+            app.state.cnn_service.calentar()
+            logger.info("Modelo CNN calentado en %.1f s", time.perf_counter() - inicio)
+        except Exception:
+            logger.exception("No se pudo calentar el modelo CNN")
     yield
 
 

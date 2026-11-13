@@ -45,7 +45,7 @@ configMapGenerator:
 images:
   - name: motorscan-backend
     newName: ghcr.io/rramirezg18/motorscan-backend
-    newTag: "1.0.0"
+    newTag: "1.0.1"
   - name: motorscan-frontend
     newName: ghcr.io/rramirezg18/motorscan-frontend
-    newTag: "1.0.0"
+    newTag: "1.0.1"

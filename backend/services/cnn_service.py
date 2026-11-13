@@ -9,6 +9,7 @@ entrenamiento. Si esos parámetros no coinciden, la predicción es incorrecta.
 import io
 import json
 import logging
+import os
 import subprocess
 
 import librosa
@@ -160,6 +161,32 @@ class CNNService:
             axis=-1,
         )
         return rgb.astype(np.uint8)
+
+    def calentar(self) -> None:
+        """Hace un análisis de prueba con audio sintético al arrancar.
+
+        La primera llamada a librosa (compilación JIT de numba, resampleo) y a
+        TensorFlow (trazado del grafo) es muy lenta: ~60 s con CPU limitada en
+        Kubernetes. Pagarla aquí, antes de que el pod esté listo, evita que el
+        primer usuario espere ese tiempo; las siguientes inferencias tardan ~1-2 s.
+        """
+        import tempfile
+        import wave
+
+        sr = 44100
+        n = int(sr * (self.mel_config["duration_seconds"] + 0.5))
+        tono = (np.sin(2 * np.pi * 120 * np.arange(n) / sr) * 8000).astype("<i2")
+        buf = io.BytesIO()
+        with wave.open(buf, "wb") as w:
+            w.setnchannels(1)
+            w.setsampwidth(2)
+            w.setframerate(sr)
+            w.writeframes(tono.tobytes())
+        audio = buf.getvalue()
+
+        self.predecir(audio, 125)
+        with tempfile.TemporaryDirectory() as tmp:
+            self.generar_espectrograma_png(audio, os.path.join(tmp, "calentar.png"))
 
     def generar_espectrograma_png(self, audio_bytes: bytes, output_path: str) -> str:
         """Guarda como PNG el MISMO espectrograma que entra al modelo.
